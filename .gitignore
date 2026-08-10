@@ -1,0 +1,26 @@
+# Backend
+smartfleet/target/
+smartfleet/.mvn/
+smartfleet/.DS_Store
+smartfleet/*.log
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/.env.local
+frontend/.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.iml
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
