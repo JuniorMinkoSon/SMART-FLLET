@@ -1,87 +1,74 @@
-import { useState } from 'react'
+import { FormEvent, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
-import './Login.css'
+import { USERS } from '@/data/mockData'
 
 export function Login() {
+  const login = useAuthStore((s) => s.login)
   const navigate = useNavigate()
-  const { login } = useAuthStore()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const submit = (e: FormEvent) => {
     e.preventDefault()
-    setError('')
-    setIsLoading(true)
-
-    try {
-      await login(email, password)
-      navigate('/')
-    } catch (err) {
-      setError('Email ou mot de passe incorrect')
-    } finally {
-      setIsLoading(false)
+    if (login(email, password)) {
+      const role = useAuthStore.getState().user?.role
+      navigate(role === 'conducteur' ? '/conducteur' : '/dashboard')
+    } else {
+      setError('Identifiants incorrects')
     }
   }
 
   return (
-    <div className="login-container">
-      <div className="login-box">
-        <div className="login-header">
-          <span className="login-icon">⚙️</span>
-          <h1>Smart Fleet</h1>
-          <p>Gestion intelligente de flotte</p>
+    <div className="login-page">
+      <div className="login-card">
+        <div className="login-logo">
+          SMART <span>FLEET</span>
         </div>
-
-        <form onSubmit={handleSubmit} className="login-form">
-          {error && <div className="login-error">{error}</div>}
-
-          <div className="form-group">
-            <label htmlFor="email">Email</label>
+        <p className="muted" style={{ marginBottom: 24 }}>
+          Gestion de flotte — Phase 1
+        </p>
+        <form onSubmit={submit}>
+          <div className="field">
+            <label>Email</label>
             <input
-              id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="votre@email.com"
+              placeholder="vous@smartfleet.com"
               required
-              disabled={isLoading}
             />
           </div>
-
-          <div className="form-group">
-            <label htmlFor="password">Mot de passe</label>
+          <div className="field">
+            <label>Mot de passe</label>
             <input
-              id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               required
-              disabled={isLoading}
             />
           </div>
-
-          <button
-            type="submit"
-            className="btn-login"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Connexion en cours...' : 'Se connecter'}
+          {error && <p className="error-text">{error}</p>}
+          <button type="submit" className="btn btn-primary btn-block btn-lg" style={{ marginTop: 12 }}>
+            Se connecter
           </button>
         </form>
-
-        <div className="login-demo">
-          <p>Compte de démonstration :</p>
-          <ul>
-            <li><strong>Admin :</strong> admin@smartfleet.com</li>
-            <li><strong>Chef projet :</strong> chef@smartfleet.com</li>
-            <li><strong>Opérateur :</strong> operateur@smartfleet.com</li>
-            <li><strong>DG :</strong> dg@smartfleet.com</li>
-          </ul>
-          <p>Mot de passe : demo123</p>
+        <div className="demo-accounts">
+          Comptes de démonstration :
+          {USERS.map((u) => (
+            <button
+              key={u.id}
+              type="button"
+              onClick={() => {
+                setEmail(u.email)
+                setPassword(u.password)
+              }}
+            >
+              <strong>{u.role === 'admin' ? 'Administrateur' : u.role === 'gestionnaire' ? 'Gestionnaire de flotte' : 'Conducteur'}</strong> — {u.email} / {u.password}
+            </button>
+          ))}
         </div>
       </div>
     </div>

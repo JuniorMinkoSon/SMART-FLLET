@@ -1,81 +1,145 @@
-export type UserRole = 'admin' | 'chef_projet' | 'operateur' | 'dg'
+export type UserRole = 'admin' | 'gestionnaire' | 'conducteur'
 
 export interface User {
   id: string
   name: string
   email: string
   role: UserRole
+  driverId?: string
 }
 
-export interface Engin {
+export type VehicleStatus =
+  | 'disponible'
+  | 'affecte'
+  | 'en_mission'
+  | 'en_retour'
+  | 'controle'
+  | 'maintenance'
+  | 'panne'
+
+export const VEHICLE_STATUS_LABELS: Record<VehicleStatus, string> = {
+  disponible: 'Disponible',
+  affecte: 'Affecté',
+  en_mission: 'En mission',
+  en_retour: 'En retour',
+  controle: 'Contrôle',
+  maintenance: 'Maintenance',
+  panne: 'Panne',
+}
+
+export interface ExternalContract {
+  provider: string
+  start: string
+  end: string
+  dailyRate: number
+}
+
+export interface Vehicle {
   id: string
   code: string
-  nom: string
   type: string
-  status: 'disponible' | 'en_chantier' | 'en_panne' | 'maintenance' | 'location_externe'
+  name: string
+  plate: string
+  status: VehicleStatus
   km: number
-  carburant: number
-  valeurAcquisition: number
-  dureeAmortissement: number
+  engineHours: number
+  fuelLevel: number
+  condition: 'Bon' | 'Moyen' | 'Mauvais'
+  site?: string
+  driverId?: string
+  external?: ExternalContract
 }
 
-export interface Projet {
-  id: string
-  nom: string
-  client: string
-  localisation: string
-  dateDebut: string
-  dateFin: string
-  chefProjet: string
-  engins: Engin[]
-  statut: 'planifie' | 'en_cours' | 'termine'
+export type MissionStatus =
+  | 'planifiee'
+  | 'affectee'
+  | 'en_cours'
+  | 'retour'
+  | 'controle'
+  | 'cloturee'
+
+export const MISSION_STATUS_LABELS: Record<MissionStatus, string> = {
+  planifiee: 'Planifiée',
+  affectee: 'Affectée',
+  en_cours: 'En cours',
+  retour: 'Retour',
+  controle: 'Contrôle',
+  cloturee: 'Clôturée',
 }
 
-export interface Affectation {
-  id: string
-  projet: string
-  engin: string
-  operateur: string
-  dateDebut: string
-  dateFin: string
-  statut: 'active' | 'terminee'
+export interface ChecklistState {
+  pneus: boolean
+  freins: boolean
+  eclairage: boolean
+  carrosserie: boolean
 }
 
-export interface Rapport {
-  id: string
-  date: string
-  engin: string
-  operateur: string
+export interface CounterReading {
   km: number
-  kmPrecedent: number
-  carburantAjoute: number
-  montantCarburant: number
-  station: string
-  etat: 'en_service' | 'en_panne' | 'stand_by'
-  preuves: string[]
-  incident?: {
-    type: string
-    description: string
-    niveau: 'normal' | 'important' | 'urgent'
-  }
+  engineHours: number
+  fuelLevel: number
+  checklist: ChecklistState
+  anomaly?: string
+  time: string
 }
 
-export interface LocationExterne {
-  id: string
-  client: string
-  engin: string
-  operateur: string
-  dateDebut: string
-  dateRetour: string
-  tarifParJour: number
-  statut: 'active' | 'terminee'
+export interface TimelineEvent {
+  label: string
+  time: string
 }
 
-export interface AlertFlotte {
+export interface Mission {
   id: string
-  type: 'panne' | 'rapport_manquant' | 'maintenance' | 'location_expiration'
-  severite: 'normal' | 'important' | 'urgent'
-  message: string
-  engin?: string
+  code: string
+  site: string
+  vehicleId: string
+  driverId: string
+  startDate: string
+  endDate: string
+  budget: number
+  status: MissionStatus
+  departure?: CounterReading
+  arrival?: CounterReading
+  timeline: TimelineEvent[]
+}
+
+export interface Driver {
+  id: string
+  name: string
+  phone: string
+  license: string
+  skills: string[]
+  status: 'disponible' | 'en_mission' | 'repos'
+}
+
+export interface FuelEntry {
+  id: string
+  vehicleId: string
+  missionId?: string
+  liters: number
+  amount: number
   date: string
+}
+
+export type ExpenseCategory = 'Carburant' | 'Maintenance' | 'Péages' | 'Pièces' | 'Autres'
+
+export interface Expense {
+  id: string
+  vehicleId?: string
+  missionId?: string
+  category: ExpenseCategory
+  label: string
+  amount: number
+  date: string
+}
+
+export type AlertSeverity = 'urgent' | 'attention' | 'info'
+
+export interface FleetAlert {
+  id: string
+  severity: AlertSeverity
+  title: string
+  detail: string
+  time: string
+  read: boolean
 }
