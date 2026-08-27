@@ -42,6 +42,7 @@ interface FleetState {
   addDriver: (d: Omit<Driver, 'id'>) => void
   createMission: (data: {
     site: string
+    client?: string
     vehicleId: string
     driverId: string
     startDate: string

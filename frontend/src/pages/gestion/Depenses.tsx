@@ -4,7 +4,7 @@ import { Drawer } from '@/components/ui'
 import { formatFCFA } from '@/utils/format'
 import { ExpenseCategory } from '@/types'
 
-const CATEGORIES: ExpenseCategory[] = ['Carburant', 'Maintenance', 'Péages', 'Pièces', 'Autres']
+const CATEGORIES: ExpenseCategory[] = ['Carburant', 'Maintenance', 'Péages', 'Pièces', 'Location', 'Autres']
 
 export function Depenses() {
   const { expenses, vehicles, missions, addExpense } = useFleetStore()

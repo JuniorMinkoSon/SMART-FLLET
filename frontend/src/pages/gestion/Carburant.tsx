@@ -6,10 +6,34 @@ import { formatFCFA, formatNumber } from '@/utils/format'
 export function Carburant() {
   const { fuelEntries, vehicles, missions, addFuelEntry } = useFleetStore()
   const [addOpen, setAddOpen] = useState(false)
-  const [form, setForm] = useState({ vehicleId: '', liters: '', amount: '' })
+  const [form, setForm] = useState({ vehicleId: '', liters: '', amount: '', station: '', km: '' })
 
   const totalLiters = fuelEntries.reduce((s, f) => s + f.liters, 0)
   const totalAmount = fuelEntries.reduce((s, f) => s + f.amount, 0)
+
+  const consumptionPerHour = (types: string[]) => {
+    let liters = 0
+    let hours = 0
+    missions.forEach((m) => {
+      const v = vehicles.find((x) => x.id === m.vehicleId)
+      if (!v || !types.includes(v.type) || !m.departure || !m.arrival) return
+      liters += fuelEntries.filter((f) => f.missionId === m.id).reduce((s, f) => s + f.liters, 0)
+      hours += m.arrival.engineHours - m.departure.engineHours
+    })
+    return hours > 0 && liters > 0 ? `${(liters / hours).toFixed(1)} L/h` : '—'
+  }
+
+  const consumptionPer100km = (types: string[]) => {
+    let liters = 0
+    let km = 0
+    missions.forEach((m) => {
+      const v = vehicles.find((x) => x.id === m.vehicleId)
+      if (!v || !types.includes(v.type) || !m.departure || !m.arrival) return
+      liters += fuelEntries.filter((f) => f.missionId === m.id).reduce((s, f) => s + f.liters, 0)
+      km += m.arrival.km - m.departure.km
+    })
+    return km > 0 && liters > 0 ? `${((liters / km) * 100).toFixed(0)} L/100 km` : '—'
+  }
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
@@ -21,10 +45,12 @@ export function Carburant() {
       missionId: activeMission?.id,
       liters: Number(form.liters),
       amount: Number(form.amount),
+      station: form.station || undefined,
+      km: form.km ? Number(form.km) : undefined,
       date: new Date().toISOString().slice(0, 10),
     })
     setAddOpen(false)
-    setForm({ vehicleId: '', liters: '', amount: '' })
+    setForm({ vehicleId: '', liters: '', amount: '', station: '', km: '' })
   }
 
   return (
@@ -49,12 +75,12 @@ export function Carburant() {
           <div className="kpi-label">Coût ce mois</div>
         </div>
         <div className="card">
-          <div className="kpi-value">18 L/h</div>
-          <div className="kpi-label">Conso moyenne pelles</div>
+          <div className="kpi-value">{consumptionPerHour(['Pelle', 'Bulldozer', 'Grue', 'Compacteur', 'Niveleuse'])}</div>
+          <div className="kpi-label">Conso réelle engins (L/h)</div>
         </div>
         <div className="card">
-          <div className="kpi-value">27 L/100 km</div>
-          <div className="kpi-label">Conso moyenne camions</div>
+          <div className="kpi-value">{consumptionPer100km(['Camion'])}</div>
+          <div className="kpi-label">Conso réelle camions</div>
         </div>
       </div>
 
@@ -65,6 +91,8 @@ export function Carburant() {
               <th>Date</th>
               <th>Engin</th>
               <th>Mission</th>
+              <th>Station</th>
+              <th>Compteur</th>
               <th>Volume</th>
               <th>Montant</th>
             </tr>
@@ -78,6 +106,8 @@ export function Carburant() {
                   <td>{f.date}</td>
                   <td className="strong">{v?.code}</td>
                   <td>{m ? m.code : '—'}</td>
+                  <td>{f.station ?? '—'}</td>
+                  <td>{f.km ? `${formatNumber(f.km)} km` : '—'}</td>
                   <td>{f.liters} L</td>
                   <td>{formatFCFA(f.amount)}</td>
                 </tr>
@@ -120,6 +150,22 @@ export function Carburant() {
               value={form.amount}
               onChange={(e) => setForm({ ...form, amount: e.target.value })}
               required
+            />
+          </div>
+          <div className="field">
+            <label>Station</label>
+            <input
+              value={form.station}
+              onChange={(e) => setForm({ ...form, station: e.target.value })}
+              placeholder="Total Marcory"
+            />
+          </div>
+          <div className="field">
+            <label>Kilométrage au ravitaillement</label>
+            <input
+              type="number"
+              value={form.km}
+              onChange={(e) => setForm({ ...form, km: e.target.value })}
             />
           </div>
           <p className="muted small">

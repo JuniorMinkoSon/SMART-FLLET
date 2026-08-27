@@ -15,7 +15,7 @@ const FLOW_STEPS = [
 
 export function MissionDetail() {
   const { id } = useParams()
-  const { missions, vehicles, drivers } = useFleetStore()
+  const { missions, vehicles, drivers, expenses } = useFleetStore()
   const mission = missions.find((m) => m.id === id)
 
   if (!mission) {
@@ -44,6 +44,7 @@ export function MissionDetail() {
 
   const dep = mission.departure
   const arr = mission.arrival
+  const spent = expenses.filter((e) => e.missionId === mission.id).reduce((s, e) => s + e.amount, 0)
   const current = arr ?? (vehicle ? { km: vehicle.km, engineHours: vehicle.engineHours, fuelLevel: vehicle.fuelLevel } : undefined)
 
   return (
@@ -56,6 +57,7 @@ export function MissionDetail() {
           <h1 className="page-title">Mission #{mission.code}</h1>
           <p className="page-subtitle" style={{ fontWeight: 700, textTransform: 'uppercase' }}>
             {mission.site}
+            {mission.client && <span style={{ fontWeight: 400 }}> · {mission.client}</span>}
           </p>
           <div style={{ marginTop: 8 }}>
             <MissionBadge status={mission.status} />
@@ -153,9 +155,21 @@ export function MissionDetail() {
                 {mission.startDate} → {mission.endDate}
               </span>
             </div>
+            {mission.client && (
+              <div className="stat-row">
+                <span className="muted">Client</span>
+                <span>{mission.client}</span>
+              </div>
+            )}
             <div className="stat-row">
-              <span className="muted">Budget</span>
+              <span className="muted">Budget prévu</span>
               <span>{formatFCFA(mission.budget)}</span>
+            </div>
+            <div className="stat-row">
+              <span className="muted">Dépenses réelles</span>
+              <span className="strong" style={{ color: spent > mission.budget ? 'var(--red)' : 'var(--green)' }}>
+                {formatFCFA(spent)}
+              </span>
             </div>
           </div>
         </div>

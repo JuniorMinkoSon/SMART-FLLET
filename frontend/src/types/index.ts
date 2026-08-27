@@ -92,6 +92,7 @@ export interface Mission {
   id: string
   code: string
   site: string
+  client?: string
   vehicleId: string
   driverId: string
   startDate: string
@@ -106,6 +107,7 @@ export interface Mission {
 export interface Driver {
   id: string
   name: string
+  matricule: string
   phone: string
   license: string
   skills: string[]
@@ -118,10 +120,18 @@ export interface FuelEntry {
   missionId?: string
   liters: number
   amount: number
+  station?: string
+  km?: number
   date: string
 }
 
-export type ExpenseCategory = 'Carburant' | 'Maintenance' | 'Péages' | 'Pièces' | 'Autres'
+export type ExpenseCategory =
+  | 'Carburant'
+  | 'Maintenance'
+  | 'Péages'
+  | 'Pièces'
+  | 'Location'
+  | 'Autres'
 
 export interface Expense {
   id: string

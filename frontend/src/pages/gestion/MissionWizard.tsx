@@ -12,6 +12,7 @@ export function MissionWizard() {
   const [step, setStep] = useState(0)
 
   const [site, setSite] = useState('')
+  const [client, setClient] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [budget, setBudget] = useState('')
@@ -26,6 +27,7 @@ export function MissionWizard() {
   const create = () => {
     const mission = createMission({
       site,
+      client: client || undefined,
       vehicleId,
       driverId,
       startDate,
@@ -65,6 +67,14 @@ export function MissionWizard() {
                 value={site}
                 onChange={(e) => setSite(e.target.value)}
                 placeholder="Chantier Alpha"
+              />
+            </div>
+            <div className="field">
+              <label>Client (optionnel)</label>
+              <input
+                value={client}
+                onChange={(e) => setClient(e.target.value)}
+                placeholder="Génie Sélect"
               />
             </div>
             <div className="grid-2">
@@ -169,6 +179,12 @@ export function MissionWizard() {
               <span className="muted">Chantier</span>
               <strong>{site}</strong>
             </div>
+            {client && (
+              <div className="stat-row">
+                <span className="muted">Client</span>
+                <strong>{client}</strong>
+              </div>
+            )}
             <div className="stat-row">
               <span className="muted">Engin</span>
               <strong>

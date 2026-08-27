@@ -5,12 +5,13 @@ import { Drawer, DriverBadge } from '@/components/ui'
 export function Conducteurs() {
   const { drivers, addDriver, vehicles } = useFleetStore()
   const [addOpen, setAddOpen] = useState(false)
-  const [form, setForm] = useState({ name: '', phone: '', license: 'C', skills: '' })
+  const [form, setForm] = useState({ name: '', matricule: '', phone: '', license: 'C', skills: '' })
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
     addDriver({
       name: form.name,
+      matricule: form.matricule,
       phone: form.phone,
       license: form.license,
       skills: form.skills
@@ -20,7 +21,7 @@ export function Conducteurs() {
       status: 'disponible',
     })
     setAddOpen(false)
-    setForm({ name: '', phone: '', license: 'C', skills: '' })
+    setForm({ name: '', matricule: '', phone: '', license: 'C', skills: '' })
   }
 
   return (
@@ -40,6 +41,7 @@ export function Conducteurs() {
           <thead>
             <tr>
               <th>Nom</th>
+              <th>Matricule</th>
               <th>Téléphone</th>
               <th>Permis</th>
               <th>Compétences</th>
@@ -53,6 +55,7 @@ export function Conducteurs() {
               return (
                 <tr key={d.id}>
                   <td className="strong">{d.name}</td>
+                  <td>{d.matricule}</td>
                   <td>{d.phone}</td>
                   <td>{d.license}</td>
                   <td>{d.skills.join(', ')}</td>
@@ -72,6 +75,15 @@ export function Conducteurs() {
           <div className="field">
             <label>Nom</label>
             <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+          </div>
+          <div className="field">
+            <label>Matricule</label>
+            <input
+              value={form.matricule}
+              onChange={(e) => setForm({ ...form, matricule: e.target.value })}
+              placeholder="GS-OP-007"
+              required
+            />
           </div>
           <div className="field">
             <label>Téléphone</label>
