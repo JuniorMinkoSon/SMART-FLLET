@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
@@ -18,6 +19,7 @@ public class DriverController {
     private final DriverService driverService;
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<DriverResponse> createDriver(@Valid @RequestBody CreateDriverRequest request) {
         Driver driver = driverService.createDriver(
             request.getName(),
@@ -29,18 +31,21 @@ public class DriverController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTIONNAIRE')")
     public ResponseEntity<List<DriverResponse>> getAllDrivers() {
         List<Driver> drivers = driverService.getAllDrivers();
         return ResponseEntity.ok(drivers.stream().map(this::mapToResponse).toList());
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTIONNAIRE')")
     public ResponseEntity<DriverResponse> getDriver(@PathVariable String id) {
         Driver driver = driverService.getDriverById(id);
         return ResponseEntity.ok(mapToResponse(driver));
     }
 
     @GetMapping("/available")
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTIONNAIRE')")
     public ResponseEntity<List<DriverResponse>> getAvailableDrivers() {
         List<Driver> drivers = driverService.getAvailableDrivers();
         return ResponseEntity.ok(drivers.stream().map(this::mapToResponse).toList());
