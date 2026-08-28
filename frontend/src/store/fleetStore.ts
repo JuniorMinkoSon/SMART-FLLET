@@ -92,7 +92,7 @@ export const useFleetStore = create<FleetState>((set, get) => ({
           : v
       ),
       drivers: s.drivers.map((d) =>
-        d.id === data.driverId ? { ...d, status: 'en_mission' } : d
+        d.id === data.driverId ? { ...d, status: 'disponible' } : d
       ),
     }))
     return mission
