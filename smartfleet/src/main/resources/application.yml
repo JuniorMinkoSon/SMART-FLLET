@@ -46,3 +46,7 @@ server:
   port: 8080
   servlet:
     context-path: /
+
+app:
+  cors:
+    allowed-origins: ${CORS_ORIGINS:http://localhost:5173}
