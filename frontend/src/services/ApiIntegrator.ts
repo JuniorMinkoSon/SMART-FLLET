@@ -13,8 +13,8 @@ interface ApiConfig {
 
 class ApiIntegrator {
   private config: ApiConfig = {
-    useBackend: import.meta.env.VITE_USE_BACKEND === 'true',
-    backendUrl: import.meta.env.VITE_API_URL || 'http://localhost:8080',
+    useBackend: (import.meta as any).env?.VITE_USE_BACKEND === 'true',
+    backendUrl: (import.meta as any).env?.VITE_API_URL || 'http://localhost:8080',
   }
 
   setConfig(config: Partial<ApiConfig>) {
@@ -61,7 +61,7 @@ class ApiIntegrator {
       return this.post<Mission>(`/missions/${missionId}/start`, {
         km: departure.km,
         engineHours: departure.engineHours,
-        fuel: departure.fuel,
+        fuel: departure.fuelLevel,
       })
     }
     missionOrchestrator.setActor(actorId, actorRole)
@@ -78,7 +78,7 @@ class ApiIntegrator {
       return this.post<Mission>(`/missions/${missionId}/return`, {
         km: arrival.km,
         engineHours: arrival.engineHours,
-        fuel: arrival.fuel,
+        fuel: arrival.fuelLevel,
       })
     }
     missionOrchestrator.setActor(actorId, actorRole)
@@ -105,8 +105,8 @@ class ApiIntegrator {
   ): Promise<void> {
     if (this.config.useBackend) {
       await this.post(`/missions/${entry.missionId}/fuel`, {
-        quantity: entry.quantity,
-        cost: entry.cost,
+        quantity: entry.liters,
+        cost: entry.amount,
         station: entry.station,
       })
       return
