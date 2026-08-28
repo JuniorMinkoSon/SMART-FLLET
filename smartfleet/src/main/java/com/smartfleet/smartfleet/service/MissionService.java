@@ -195,6 +195,19 @@ public class MissionService {
         return mission;
     }
 
+    public List<Mission> getAllMissions() {
+        return missionRepository.findAll();
+    }
+
+    public Mission getMissionById(String id) {
+        return missionRepository.findById(id)
+            .orElseThrow(() -> new BusinessException("MISSION_NOT_FOUND", "Mission non trouvée", 404));
+    }
+
+    public List<Mission> getMissionsByDriver(String driverId) {
+        return missionRepository.findByDriverId(driverId);
+    }
+
     private String generateMissionCode() {
         long count = missionRepository.count();
         return "MS-" + String.format("%04d", count + 1);
