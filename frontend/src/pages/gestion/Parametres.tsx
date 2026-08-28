@@ -3,12 +3,11 @@ import { VEHICLE_STATUS_LABELS, VehicleStatus } from '@/types'
 
 const STATUS_ORDER: VehicleStatus[] = [
   'disponible',
-  'affecte',
+  'reserve',
   'en_mission',
-  'en_retour',
   'controle',
   'maintenance',
-  'panne',
+  'hors_service',
 ]
 
 export function Parametres() {
@@ -57,12 +56,11 @@ export function Parametres() {
               {
                 {
                   disponible: 'Engin prêt à être affecté',
-                  affecte: 'Affecté à une mission, départ non confirmé',
+                  reserve: 'Réservé pour une mission future',
                   en_mission: 'En exploitation sur chantier',
-                  en_retour: 'Retour de mission en cours',
                   controle: 'Retour en attente de contrôle',
                   maintenance: 'En intervention de maintenance',
-                  panne: 'Immobilisé suite à une panne',
+                  hors_service: 'Indisponible ou immobilisé',
                 }[s]
               }
             </span>

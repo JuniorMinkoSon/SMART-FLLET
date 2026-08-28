@@ -12,9 +12,9 @@ export function Dashboard() {
   const count = (status: VehicleStatus) => vehicles.filter((v) => v.status === status).length
   const disponibles = count('disponible')
   const enMission = count('en_mission')
-  const maintenance = count('maintenance') + count('panne')
+  const maintenance = count('maintenance') + count('hors_service')
   const retoursAControler = missions.filter((m) => m.status === 'controle' || m.status === 'retour').length
-  const enginsAction = count('maintenance') + count('panne') + count('controle')
+  const enginsAction = count('maintenance') + count('hors_service') + count('controle')
   const contratsExpirant = vehicles.filter((v) => v.external).length
 
   const fuelCost = fuelEntries.reduce((s, f) => s + f.amount, 0)
@@ -25,7 +25,7 @@ export function Dashboard() {
   const today = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
   const activeMissions = missions.filter((m) => m.status !== 'cloturee').slice(0, 5)
 
-  const parcStatuses: VehicleStatus[] = ['disponible', 'affecte', 'en_mission', 'controle', 'maintenance', 'panne']
+  const parcStatuses: VehicleStatus[] = ['disponible', 'reserve', 'en_mission', 'controle', 'maintenance', 'hors_service']
 
   return (
     <div className="page">

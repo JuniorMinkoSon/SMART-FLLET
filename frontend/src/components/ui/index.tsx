@@ -4,6 +4,7 @@ import {
   MissionStatus,
   VEHICLE_STATUS_LABELS,
   MISSION_STATUS_LABELS,
+  Driver,
 } from '@/types'
 
 export function StatusBadge({ status }: { status: VehicleStatus }) {
@@ -24,8 +25,13 @@ export function MissionBadge({ status }: { status: MissionStatus }) {
   )
 }
 
-export function DriverBadge({ status }: { status: 'disponible' | 'en_mission' | 'repos' }) {
-  const labels = { disponible: 'Disponible', en_mission: 'En mission', repos: 'Repos' }
+export function DriverBadge({ status }: { status: Driver['status'] }) {
+  const labels = {
+    disponible: 'Disponible',
+    reserve: 'Réservé',
+    en_mission: 'En mission',
+    indisponible: 'Indisponible',
+  }
   return (
     <span className={`badge badge-${status}`}>
       <span className="dot" />

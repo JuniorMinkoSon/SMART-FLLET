@@ -1,14 +1,17 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useFleetStore } from '@/store/fleetStore'
+import { useMissionWorkflow } from '@/hooks/useMissionWorkflow'
 import { MissionBadge } from '@/components/ui'
 
 export function Missions() {
-  const { missions, vehicles, drivers } = useFleetStore()
+  const { vehicles, drivers } = useFleetStore()
+  const { getVisibleMissions } = useMissionWorkflow()
   const navigate = useNavigate()
   const [statusFilter, setStatusFilter] = useState('')
   const [search, setSearch] = useState('')
 
+  const missions = getVisibleMissions()
   const filtered = missions.filter((m) => {
     if (statusFilter && m.status !== statusFilter) return false
     if (search && !`${m.code} ${m.site}`.toLowerCase().includes(search.toLowerCase())) return false

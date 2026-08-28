@@ -42,43 +42,36 @@ export function useMissionWorkflow() {
     }) => {
       ensurePermission('mission.create')
       ensureActor()
-      return fleetStore.createMission(data)
+      return missionOrchestrator.createMission(data)
     },
-    [ensurePermission, ensureActor, fleetStore]
+    [ensurePermission, ensureActor]
   )
 
   const startMission = useCallback(
     (missionId: string, departure: Omit<CounterReading, 'time'>) => {
       ensurePermission('mission.start')
       ensureActor()
-      fleetStore.recordDeparture(missionId, departure)
-      return fleetStore.missions.find((m) => m.id === missionId)!
+      return missionOrchestrator.startMission(missionId, departure)
     },
-    [ensurePermission, ensureActor, fleetStore]
+    [ensurePermission, ensureActor]
   )
 
   const returnMission = useCallback(
     (missionId: string, arrival: Omit<CounterReading, 'time'>) => {
       ensurePermission('mission.return')
       ensureActor()
-      fleetStore.recordReturn(missionId, arrival)
-      return fleetStore.missions.find((m) => m.id === missionId)!
+      return missionOrchestrator.returnMission(missionId, arrival)
     },
-    [ensurePermission, ensureActor, fleetStore]
+    [ensurePermission, ensureActor]
   )
 
   const validateReturn = useCallback(
     (missionId: string, isConform: boolean = true) => {
       ensurePermission('mission.validate')
       ensureActor()
-      if (isConform) {
-        fleetStore.validateReturn(missionId)
-      } else {
-        fleetStore.sendToMaintenance(missionId)
-      }
-      return fleetStore.missions.find((m) => m.id === missionId)!
+      return missionOrchestrator.validateReturn(missionId, isConform)
     },
-    [ensurePermission, ensureActor, fleetStore]
+    [ensurePermission, ensureActor]
   )
 
   // ========== FUEL ==========
@@ -104,16 +97,31 @@ export function useMissionWorkflow() {
 
   const getDriverMissions = useCallback(
     (driverId: string) => {
+      if (!user) return []
+      if (user.role === 'conducteur' && user.driverId !== driverId) return []
       return fleetStore.missions.filter((m) => m.driverId === driverId)
     },
-    [fleetStore]
+    [user, fleetStore]
   )
 
   const getUserMissions = useCallback(() => {
-    if (!user || user.role !== 'conducteur') return []
-    const driverId = user.driverId
-    if (!driverId) return []
-    return fleetStore.missions.filter((m) => m.driverId === driverId)
+    if (!user) return []
+    if (user.role === 'conducteur') {
+      const driverId = user.driverId
+      if (!driverId) return []
+      return fleetStore.missions.filter((m) => m.driverId === driverId)
+    }
+    return fleetStore.missions
+  }, [user, fleetStore])
+
+  const getVisibleMissions = useCallback(() => {
+    if (!user) return []
+    if (user.role === 'conducteur') {
+      const driverId = user.driverId
+      if (!driverId) return []
+      return fleetStore.missions.filter((m) => m.driverId === driverId)
+    }
+    return fleetStore.missions
   }, [user, fleetStore])
 
   const canPerform = useCallback(
@@ -137,6 +145,7 @@ export function useMissionWorkflow() {
     getEligibleDrivers,
     getDriverMissions,
     getUserMissions,
+    getVisibleMissions,
     canPerform,
 
     // Store data

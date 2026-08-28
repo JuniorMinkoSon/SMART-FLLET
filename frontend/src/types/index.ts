@@ -10,21 +10,19 @@ export interface User {
 
 export type VehicleStatus =
   | 'disponible'
-  | 'affecte'
+  | 'reserve'
   | 'en_mission'
-  | 'en_retour'
   | 'controle'
   | 'maintenance'
-  | 'panne'
+  | 'hors_service'
 
 export const VEHICLE_STATUS_LABELS: Record<VehicleStatus, string> = {
   disponible: 'Disponible',
-  affecte: 'Affecté',
+  reserve: 'Réservé',
   en_mission: 'En mission',
-  en_retour: 'En retour',
   controle: 'Contrôle',
   maintenance: 'Maintenance',
-  panne: 'Panne',
+  hors_service: 'Hors service',
 }
 
 export interface ExternalContract {
@@ -111,7 +109,7 @@ export interface Driver {
   phone: string
   license: string
   skills: string[]
-  status: 'disponible' | 'en_mission' | 'repos'
+  status: 'disponible' | 'reserve' | 'en_mission' | 'indisponible'
 }
 
 export interface FuelEntry {

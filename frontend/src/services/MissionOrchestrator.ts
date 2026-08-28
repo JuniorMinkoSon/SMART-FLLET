@@ -6,6 +6,7 @@
  */
 
 import { useFleetStore } from '@/store/fleetStore'
+import { useAuditStore } from '@/store/auditStore'
 import type { Mission, Vehicle, Driver, FuelEntry, CounterReading, UserRole } from '@/types'
 import { permissionService } from './PermissionService'
 
@@ -45,17 +46,48 @@ class MissionOrchestrator {
 
     const vehicle = state.vehicles.find((v) => v.id === data.vehicleId)
     if (!vehicle) throw new Error('Engin non trouvé')
-    if (vehicle.status !== 'disponible') {
-      throw new Error(`Engin ${vehicle.code} non disponible`)
+    if (vehicle.status !== 'disponible' && vehicle.status !== 'reserve') {
+      throw new Error(`Engin ${vehicle.code} non disponible (${vehicle.status})`)
     }
 
     const driver = state.drivers.find((d) => d.id === data.driverId)
     if (!driver) throw new Error('Conducteur non trouvé')
-    if (driver.status !== 'disponible') {
-      throw new Error('Conducteur non disponible')
+    if (driver.status !== 'disponible' && driver.status !== 'reserve') {
+      throw new Error(`Conducteur non disponible (${driver.status})`)
     }
 
-    return state.createMission(data)
+    if (!driver.skills.includes(vehicle.type)) {
+      throw new Error(`Conducteur non habilité pour engins type ${vehicle.type}`)
+    }
+
+    const overlapVehicle = state.missions.some((m) => {
+      if (m.status === 'cloturee') return false
+      if (m.vehicleId !== data.vehicleId) return false
+      return !(data.endDate < m.startDate || data.startDate > m.endDate)
+    })
+    if (overlapVehicle) {
+      throw new Error(`Engin déjà réservé sur cette période`)
+    }
+
+    const overlapDriver = state.missions.some((m) => {
+      if (m.status === 'cloturee') return false
+      if (m.driverId !== data.driverId) return false
+      return !(data.endDate < m.startDate || data.startDate > m.endDate)
+    })
+    if (overlapDriver) {
+      throw new Error(`Conducteur déjà affecté sur cette période`)
+    }
+
+    const mission = state.createMission(data)
+    useAuditStore.getState().log({
+      actor: this.currentActorId,
+      action: 'mission.created',
+      missionId: mission.id,
+      vehicleId: data.vehicleId,
+      driverId: data.driverId,
+      details: { site: data.site, budget: data.budget },
+    })
+    return mission
   }
 
   /** PHASE 3 : Départ (mission → en_cours, engin → en_mission) */
@@ -67,6 +99,14 @@ class MissionOrchestrator {
     if (mission.status !== 'affectee') throw new Error('Mission non affectée')
 
     state.recordDeparture(missionId, departure)
+    useAuditStore.getState().log({
+      actor: this.currentActorId,
+      action: 'mission.started',
+      missionId,
+      vehicleId: mission.vehicleId,
+      driverId: mission.driverId,
+      details: { km: departure.km, fuelLevel: departure.fuelLevel },
+    })
     return useFleetStore.getState().missions.find((m) => m.id === missionId)!
   }
 
@@ -79,6 +119,14 @@ class MissionOrchestrator {
     if (mission.status !== 'en_cours') throw new Error('Mission non en cours')
 
     state.recordReturn(missionId, arrival)
+    useAuditStore.getState().log({
+      actor: this.currentActorId,
+      action: 'mission.returned',
+      missionId,
+      vehicleId: mission.vehicleId,
+      driverId: mission.driverId,
+      details: { km: arrival.km, fuelLevel: arrival.fuelLevel },
+    })
     return useFleetStore.getState().missions.find((m) => m.id === missionId)!
   }
 
@@ -94,6 +142,14 @@ class MissionOrchestrator {
 
     if (isConform) state.validateReturn(missionId)
     else state.sendToMaintenance(missionId)
+    useAuditStore.getState().log({
+      actor: this.currentActorId,
+      action: isConform ? 'mission.validated' : 'mission.maintenance',
+      missionId,
+      vehicleId: mission.vehicleId,
+      driverId: mission.driverId,
+      details: { conform: isConform },
+    })
     return useFleetStore.getState().missions.find((m) => m.id === missionId)!
   }
 
