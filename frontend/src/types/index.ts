@@ -48,20 +48,12 @@ export interface Vehicle {
   external?: ExternalContract
 }
 
-export type MissionStatus =
-  | 'planifiee'
-  | 'affectee'
-  | 'en_cours'
-  | 'retour'
-  | 'controle'
-  | 'cloturee'
+export type MissionStatus = 'affectee' | 'en_cours' | 'controle' | 'cloturee'
 
 export const MISSION_STATUS_LABELS: Record<MissionStatus, string> = {
-  planifiee: 'Planifiée',
   affectee: 'Affectée',
   en_cours: 'En cours',
-  retour: 'Retour',
-  controle: 'Contrôle',
+  controle: 'Contrôle en attente',
   cloturee: 'Clôturée',
 }
 

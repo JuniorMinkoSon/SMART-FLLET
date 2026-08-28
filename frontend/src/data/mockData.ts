@@ -279,7 +279,7 @@ export const MISSIONS: Mission[] = [
     startDate: '2026-08-24',
     endDate: '2026-08-27',
     budget: 980000,
-    status: 'retour',
+    status: 'controle',
     departure: {
       km: 210120,
       engineHours: 7143,

@@ -136,7 +136,7 @@ class MissionOrchestrator {
     const state = useFleetStore.getState()
     const mission = state.missions.find((m) => m.id === missionId)
     if (!mission) throw new Error('Mission non trouvée')
-    if (mission.status !== 'controle' && mission.status !== 'retour') {
+    if (mission.status !== 'controle') {
       throw new Error('Mission non en contrôle')
     }
 

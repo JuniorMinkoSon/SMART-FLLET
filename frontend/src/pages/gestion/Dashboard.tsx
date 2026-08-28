@@ -13,7 +13,7 @@ export function Dashboard() {
   const disponibles = count('disponible')
   const enMission = count('en_mission')
   const maintenance = count('maintenance') + count('hors_service')
-  const retoursAControler = missions.filter((m) => m.status === 'controle' || m.status === 'retour').length
+  const retoursAControler = missions.filter((m) => m.status === 'controle').length
   const enginsAction = count('maintenance') + count('hors_service') + count('controle')
   const contratsExpirant = vehicles.filter((v) => v.external).length
 

@@ -3,6 +3,7 @@ package com.smartfleet.smartfleet.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -49,16 +50,18 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
-                .requestMatchers("/api/vehicles").hasAnyRole("ADMIN", "GESTIONNAIRE")
-                .requestMatchers("/api/drivers").hasAnyRole("ADMIN", "GESTIONNAIRE")
-                .requestMatchers("POST", "/api/missions").hasAnyRole("ADMIN", "GESTIONNAIRE")
-                .requestMatchers("GET", "/api/missions").hasAnyRole("ADMIN", "GESTIONNAIRE")
-                .requestMatchers("/api/missions/me").hasRole("CONDUCTEUR")
-                .requestMatchers("/api/missions/*/start").hasRole("CONDUCTEUR")
-                .requestMatchers("/api/missions/*/return").hasRole("CONDUCTEUR")
-                .requestMatchers("/api/missions/*/validate").hasAnyRole("ADMIN", "GESTIONNAIRE")
-                .requestMatchers("/api/missions/*/maintenance").hasAnyRole("ADMIN", "GESTIONNAIRE")
-                .requestMatchers("/api/missions/*/fuel").hasRole("CONDUCTEUR")
+                .requestMatchers(HttpMethod.GET, "/api/vehicles").hasAnyRole("ADMIN", "GESTIONNAIRE")
+                .requestMatchers(HttpMethod.POST, "/api/vehicles").hasAnyRole("ADMIN", "GESTIONNAIRE")
+                .requestMatchers(HttpMethod.GET, "/api/drivers").hasAnyRole("ADMIN", "GESTIONNAIRE")
+                .requestMatchers(HttpMethod.POST, "/api/drivers").hasAnyRole("ADMIN", "GESTIONNAIRE")
+                .requestMatchers(HttpMethod.POST, "/api/missions").hasAnyRole("ADMIN", "GESTIONNAIRE")
+                .requestMatchers(HttpMethod.GET, "/api/missions").hasAnyRole("ADMIN", "GESTIONNAIRE")
+                .requestMatchers(HttpMethod.GET, "/api/missions/me").hasRole("CONDUCTEUR")
+                .requestMatchers(HttpMethod.POST, "/api/missions/*/start").hasRole("CONDUCTEUR")
+                .requestMatchers(HttpMethod.POST, "/api/missions/*/return").hasRole("CONDUCTEUR")
+                .requestMatchers(HttpMethod.POST, "/api/missions/*/validate").hasAnyRole("ADMIN", "GESTIONNAIRE")
+                .requestMatchers(HttpMethod.POST, "/api/missions/*/maintenance").hasAnyRole("ADMIN", "GESTIONNAIRE")
+                .requestMatchers(HttpMethod.POST, "/api/missions/*/fuel").hasRole("CONDUCTEUR")
                 .anyRequest().authenticated()
             )
             .httpBasic(basic -> {});

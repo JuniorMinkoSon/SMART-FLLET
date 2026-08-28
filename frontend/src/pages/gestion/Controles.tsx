@@ -11,7 +11,7 @@ export function Controles() {
   const [confirm, setConfirm] = useState<{ mission: Mission; action: 'valider' | 'maintenance' } | null>(null)
 
   const missions = getVisibleMissions()
-  const toControl = missions.filter((m) => m.status === 'controle' || m.status === 'retour')
+  const toControl = missions.filter((m) => m.status === 'controle')
   const departures = missions.filter((m) => m.status === 'affectee')
 
   const checklistLabels: Record<string, string> = {
