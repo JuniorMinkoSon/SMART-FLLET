@@ -74,12 +74,11 @@ export function Flotte() {
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
           <option value="">Statut</option>
           <option value="disponible">Disponible</option>
-          <option value="affecte">Affecté</option>
+          <option value="reserve">Réservé</option>
           <option value="en_mission">En mission</option>
-          <option value="en_retour">En retour</option>
           <option value="controle">Contrôle</option>
           <option value="maintenance">Maintenance</option>
-          <option value="panne">Panne</option>
+          <option value="hors_service">Hors service</option>
         </select>
         <select value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)}>
           <option value="">Interne / Externe</option>
