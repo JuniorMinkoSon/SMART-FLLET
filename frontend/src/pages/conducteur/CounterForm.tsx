@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { DriverLayout } from './DriverLayout'
 import { useDriverData } from './useDriverData'
-import { useFleetStore } from '@/store/fleetStore'
+import { useMissionWorkflow } from '@/hooks/useMissionWorkflow'
 import { formatNumber } from '@/utils/format'
 import { ChecklistState } from '@/types'
 
@@ -15,8 +15,9 @@ const CHECK_ITEMS: { key: keyof ChecklistState; label: string }[] = [
 
 export function CounterForm({ mode }: { mode: 'depart' | 'retour' }) {
   const { mission, vehicle } = useDriverData()
-  const { recordDeparture, recordReturn } = useFleetStore()
+  const { startMission, returnMission } = useMissionWorkflow()
   const navigate = useNavigate()
+  const [error, setError] = useState('')
 
   const [km, setKm] = useState(vehicle ? String(vehicle.km) : '')
   const [hours, setHours] = useState(vehicle ? String(vehicle.engineHours) : '')
@@ -45,20 +46,25 @@ export function CounterForm({ mode }: { mode: 'depart' | 'retour' }) {
   const kmNum = Number(km)
   const hoursNum = Number(hours)
 
-  const submit = () => {
-    const reading = {
-      km: kmNum,
-      engineHours: hoursNum,
-      fuelLevel: fuel,
-      checklist,
-      anomaly: anomaly || undefined,
-    }
-    if (mode === 'depart') {
-      recordDeparture(mission.id, reading)
-      navigate('/conducteur')
-    } else {
-      recordReturn(mission.id, reading)
-      setSaved(true)
+  const submit = async () => {
+    try {
+      setError('')
+      const reading = {
+        km: kmNum,
+        engineHours: hoursNum,
+        fuelLevel: fuel,
+        checklist,
+        anomaly: anomaly || undefined,
+      }
+      if (mode === 'depart') {
+        await startMission(mission.id, reading)
+        navigate('/conducteur')
+      } else {
+        await returnMission(mission.id, reading)
+        setSaved(true)
+      }
+    } catch (err) {
+      setError((err as Error).message)
     }
   }
 
@@ -98,6 +104,11 @@ export function CounterForm({ mode }: { mode: 'depart' | 'retour' }) {
 
   return (
     <DriverLayout title={mode === 'depart' ? 'Départ de mission' : 'Retour de mission'}>
+      {error && (
+        <div className="card" style={{ borderLeft: '4px solid var(--red)', padding: 12, marginBottom: 16 }}>
+          <strong style={{ color: 'var(--red)' }}>Erreur :</strong> {error}
+        </div>
+      )}
       <div className="card">
         <p className="strong" style={{ marginBottom: 14 }}>
           {vehicle.code} — {vehicle.type}
