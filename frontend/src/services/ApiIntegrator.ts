@@ -1,13 +1,10 @@
 /**
- * API INTEGRATOR - Pont entre MissionOrchestrator (mock) et API Backend réelle
- * Permet de basculer entre mock et backend en 1 ligne
+ * API INTEGRATOR - Pont entre MissionOrchestrator (mock) et API backend réelle.
+ * Permet de basculer entre mock local et backend en 1 ligne (setConfig).
  */
 
 import { missionOrchestrator } from './MissionOrchestrator'
-import {
-  Mission, Vehicle, DriverProfile, FuelEntry, Alert,
-  UserRole, VehicleOwnership, VehicleStatus, MissionStatus, DriverStatus
-} from '@/types'
+import type { Mission, FuelEntry, CounterReading, UserRole } from '@/types'
 
 interface ApiConfig {
   useBackend: boolean
@@ -16,165 +13,94 @@ interface ApiConfig {
 
 class ApiIntegrator {
   private config: ApiConfig = {
-    useBackend: true,
-    backendUrl: 'http://localhost:9090'
+    useBackend: false,
+    backendUrl: 'http://localhost:9090',
   }
 
   setConfig(config: Partial<ApiConfig>) {
     this.config = { ...this.config, ...config }
   }
 
-  async createMission(data: {
-    site: string
-    client: string
-    vehicleId: string
-    driverId: string
-    startDate: string
-    endDate: string
-  }, actorId: string, actorRole: UserRole): Promise<Mission> {
-    if (this.config.useBackend) {
-      const response = await fetch(`${this.config.backendUrl}/api/missions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      })
-      return response.json()
-    }
+  private async post<T>(path: string, body: unknown): Promise<T> {
+    const response = await fetch(`${this.config.backendUrl}/api${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    if (!response.ok) throw new Error(`API ${path}: ${response.status}`)
+    return response.json() as Promise<T>
+  }
 
+  async createMission(
+    data: {
+      site: string
+      client?: string
+      vehicleId: string
+      driverId: string
+      startDate: string
+      endDate: string
+      budget: number
+    },
+    actorId: string,
+    actorRole: UserRole,
+  ): Promise<Mission> {
+    if (this.config.useBackend) {
+      return this.post<Mission>('/missions', data)
+    }
     missionOrchestrator.setActor(actorId, actorRole)
     return missionOrchestrator.createMission(data)
   }
 
-  async assignMission(missionId: string, actorId: string, actorRole: UserRole): Promise<Mission> {
-    if (this.config.useBackend) {
-      const response = await fetch(`${this.config.backendUrl}/api/missions/${missionId}/assign`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({})
-      })
-      return response.json()
-    }
-
-    missionOrchestrator.setActor(actorId, actorRole)
-    return missionOrchestrator.assignMission(missionId)
-  }
-
   async startMission(
     missionId: string,
-    departureData: { km: number; engineHours: number; fuelLevel: number },
+    departure: Omit<CounterReading, 'time'>,
     actorId: string,
-    actorRole: UserRole
+    actorRole: UserRole,
   ): Promise<Mission> {
     if (this.config.useBackend) {
-      const response = await fetch(`${this.config.backendUrl}/api/missions/${missionId}/departure`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(departureData)
-      })
-      return response.json()
+      return this.post<Mission>(`/missions/${missionId}/departure`, departure)
     }
-
     missionOrchestrator.setActor(actorId, actorRole)
-    return missionOrchestrator.startMission(missionId, departureData)
+    return missionOrchestrator.startMission(missionId, departure)
   }
 
   async returnMission(
     missionId: string,
-    arrivalData: { km: number; engineHours: number; fuelLevel: number },
+    arrival: Omit<CounterReading, 'time'>,
     actorId: string,
-    actorRole: UserRole
+    actorRole: UserRole,
   ): Promise<Mission> {
     if (this.config.useBackend) {
-      const response = await fetch(`${this.config.backendUrl}/api/missions/${missionId}/arrival`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(arrivalData)
-      })
-      return response.json()
+      return this.post<Mission>(`/missions/${missionId}/arrival`, arrival)
     }
-
     missionOrchestrator.setActor(actorId, actorRole)
-    return missionOrchestrator.returnMission(missionId, arrivalData)
+    return missionOrchestrator.returnMission(missionId, arrival)
   }
 
   async validateReturn(
     missionId: string,
     isConform: boolean,
     actorId: string,
-    actorRole: UserRole
+    actorRole: UserRole,
   ): Promise<Mission> {
     if (this.config.useBackend) {
-      const response = await fetch(`${this.config.backendUrl}/api/missions/${missionId}/validate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isConform })
-      })
-      return response.json()
+      return this.post<Mission>(`/missions/${missionId}/validate`, { isConform })
     }
-
     missionOrchestrator.setActor(actorId, actorRole)
     return missionOrchestrator.validateReturn(missionId, isConform)
   }
 
   async recordFuel(
-    missionId: string,
-    fuelData: {
-      quantity: number
-      cost: number
-      station: string
-      receiptUrl: string
-    },
+    entry: Omit<FuelEntry, 'id'>,
     actorId: string,
-    actorRole: UserRole
-  ): Promise<FuelEntry> {
+    actorRole: UserRole,
+  ): Promise<void> {
     if (this.config.useBackend) {
-      const response = await fetch(`${this.config.backendUrl}/api/missions/${missionId}/fuel-entry`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(fuelData)
-      })
-      return response.json()
+      await this.post(`/missions/${entry.missionId}/fuel-entry`, entry)
+      return
     }
-
     missionOrchestrator.setActor(actorId, actorRole)
-    return missionOrchestrator.recordFuel(missionId, fuelData)
-  }
-
-  async sendVehicleToMaintenance(
-    vehicleId: string,
-    reason: string,
-    actorId: string,
-    actorRole: UserRole
-  ): Promise<Vehicle> {
-    if (this.config.useBackend) {
-      const response = await fetch(`${this.config.backendUrl}/api/vehicles/${vehicleId}/maintenance`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reason })
-      })
-      return response.json()
-    }
-
-    missionOrchestrator.setActor(actorId, actorRole)
-    return missionOrchestrator.sendVehicleToMaintenance(vehicleId, reason)
-  }
-
-  async releaseVehicle(
-    vehicleId: string,
-    actorId: string,
-    actorRole: UserRole
-  ): Promise<Vehicle> {
-    if (this.config.useBackend) {
-      const response = await fetch(`${this.config.backendUrl}/api/vehicles/${vehicleId}/release`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({})
-      })
-      return response.json()
-    }
-
-    missionOrchestrator.setActor(actorId, actorRole)
-    return missionOrchestrator.releaseVehicle(vehicleId)
+    missionOrchestrator.recordFuel(entry)
   }
 }
 

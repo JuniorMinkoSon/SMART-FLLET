@@ -1,342 +1,123 @@
 /**
  * MISSION ORCHESTRATOR - Service métier centralisé
- * Gère TOUTES les transitions d'état de manière transactionnelle
- * Coordonne: Mission + Vehicle + Driver + Audit
+ * Coordonne les transitions d'état Mission + Vehicle + Driver
+ * en s'appuyant sur le store Zustand (source de vérité unique),
+ * avec contrôle RBAC via PermissionService.
  */
 
 import { useFleetStore } from '@/store/fleetStore'
-import {
-  Mission, Vehicle, DriverProfile, FuelEntry, Alert, AuditLog,
-  MissionStatus, VehicleStatus, DriverStatus, AlertType, AuditAction, UserRole
-} from '@/types'
+import type { Mission, Vehicle, Driver, FuelEntry, CounterReading, UserRole } from '@/types'
+import { permissionService } from './PermissionService'
+
+interface MissionInput {
+  site: string
+  client?: string
+  vehicleId: string
+  driverId: string
+  startDate: string
+  endDate: string
+  budget: number
+}
 
 class MissionOrchestrator {
-  private fleetStore = useFleetStore()
-  private currentActorId: string = ''
-  private currentActorRole: UserRole = UserRole.ADMIN
+  private currentActorId = ''
+  private currentActorRole: UserRole = 'admin'
 
   setActor(actorId: string, actorRole: UserRole) {
     this.currentActorId = actorId
     this.currentActorRole = actorRole
   }
 
-  /**
-   * ===============================================
-   * PHASE 1: CRÉATION DE MISSION
-   * ===============================================
-   */
-  createMission(data: {
-    site: string
-    client: string
-    vehicleId: string
-    driverId: string
-    startDate: string
-    endDate: string
-  }): Mission {
-    const vehicle = this.fleetStore.getVehicleById(data.vehicleId)
-    if (!vehicle) throw new Error('Véhicule non trouvé')
-    if (vehicle.status !== VehicleStatus.DISPONIBLE) {
-      throw new Error(`Véhicule ${vehicle.code} non disponible`)
+  getActor() {
+    return { id: this.currentActorId, role: this.currentActorRole }
+  }
+
+  private requirePermission(permission: string) {
+    if (!permissionService.hasPermission(this.currentActorRole, permission)) {
+      throw new Error(`Action non autorisée pour le rôle ${this.currentActorRole} (${permission})`)
+    }
+  }
+
+  /** PHASE 1-2 : Création + affectation de mission */
+  createMission(data: MissionInput): Mission {
+    this.requirePermission('mission.create')
+    const state = useFleetStore.getState()
+
+    const vehicle = state.vehicles.find((v) => v.id === data.vehicleId)
+    if (!vehicle) throw new Error('Engin non trouvé')
+    if (vehicle.status !== 'disponible') {
+      throw new Error(`Engin ${vehicle.code} non disponible`)
     }
 
-    const driver = this.fleetStore.getDriverById(data.driverId)
+    const driver = state.drivers.find((d) => d.id === data.driverId)
     if (!driver) throw new Error('Conducteur non trouvé')
-    if (driver.status !== DriverStatus.DISPONIBLE) {
+    if (driver.status !== 'disponible') {
       throw new Error('Conducteur non disponible')
     }
 
-    const mission: Mission = {
-      id: `MS-${Date.now()}`,
-      site: data.site,
-      client: data.client,
-      vehicleId: data.vehicleId,
-      driverId: data.driverId,
-      status: MissionStatus.PLANIFIEE,
-      startDate: data.startDate,
-      endDate: data.endDate,
-      createdAt: new Date().toISOString()
-    }
-
-    this.fleetStore.setMissions([...this.fleetStore.missions, mission])
-    this.logAudit(AuditAction.CREATE_MISSION, `Mission ${mission.id} créée`)
-
-    return mission
+    return state.createMission(data)
   }
 
-  /**
-   * ===============================================
-   * PHASE 2: AFFECTATION DE MISSION
-   * ===============================================
-   */
-  assignMission(missionId: string): Mission {
-    const mission = this.fleetStore.getMissionById(missionId)
+  /** PHASE 3 : Départ (mission → en_cours, engin → en_mission) */
+  startMission(missionId: string, departure: Omit<CounterReading, 'time'>): Mission {
+    this.requirePermission('mission.start')
+    const state = useFleetStore.getState()
+    const mission = state.missions.find((m) => m.id === missionId)
     if (!mission) throw new Error('Mission non trouvée')
-    if (mission.status !== MissionStatus.PLANIFIEE) {
-      throw new Error('Mission non en état PLANIFIEE')
-    }
+    if (mission.status !== 'affectee') throw new Error('Mission non affectée')
 
-    const vehicle = this.fleetStore.getVehicleById(mission.vehicleId)
-    const driver = this.fleetStore.getDriverById(mission.driverId)
-
-    // Transition états: Mission → AFFECTEE, Vehicle → AFFECTE, Driver → AFFECTE
-    mission.status = MissionStatus.AFFECTEE
-    vehicle!.status = VehicleStatus.AFFECTE
-    driver!.status = DriverStatus.AFFECTE
-
-    this.fleetStore.setMissions(
-      this.fleetStore.missions.map(m => m.id === missionId ? mission : m)
-    )
-    this.fleetStore.setEngins(
-      this.fleetStore.engins.map(e => e.id === mission.vehicleId ? vehicle! : e)
-    )
-    this.fleetStore.setDrivers(
-      this.fleetStore.drivers.map(d => d.id === mission.driverId ? driver! : d)
-    )
-
-    this.logAudit(AuditAction.ASSIGN_MISSION, `Mission ${missionId} affectée`)
-    return mission
+    state.recordDeparture(missionId, departure)
+    return useFleetStore.getState().missions.find((m) => m.id === missionId)!
   }
 
-  /**
-   * ===============================================
-   * PHASE 3: DÉMARRAGE DE MISSION
-   * ===============================================
-   */
-  startMission(
-    missionId: string,
-    departureData: { km: number; engineHours: number; fuelLevel: number }
-  ): Mission {
-    const mission = this.fleetStore.getMissionById(missionId)
+  /** PHASE 4 : Retour (mission → controle, engin → controle) */
+  returnMission(missionId: string, arrival: Omit<CounterReading, 'time'>): Mission {
+    this.requirePermission('mission.return')
+    const state = useFleetStore.getState()
+    const mission = state.missions.find((m) => m.id === missionId)
     if (!mission) throw new Error('Mission non trouvée')
-    if (mission.status !== MissionStatus.AFFECTEE) {
-      throw new Error('Mission non affectée')
-    }
+    if (mission.status !== 'en_cours') throw new Error('Mission non en cours')
 
-    const vehicle = this.fleetStore.getVehicleById(mission.vehicleId)
-    const driver = this.fleetStore.getDriverById(mission.driverId)
-
-    // Transitions: Mission → EN_COURS, Vehicle → EN_MISSION, Driver → EN_MISSION
-    mission.status = MissionStatus.EN_COURS
-    mission.departureKm = departureData.km
-    mission.departureTime = new Date().toISOString()
-
-    vehicle!.status = VehicleStatus.EN_MISSION
-    vehicle!.km = departureData.km
-    vehicle!.engineHours = departureData.engineHours
-    vehicle!.fuelLevel = departureData.fuelLevel
-
-    driver!.status = DriverStatus.EN_MISSION
-
-    this.fleetStore.setMissions(
-      this.fleetStore.missions.map(m => m.id === missionId ? mission : m)
-    )
-    this.fleetStore.setEngins(
-      this.fleetStore.engins.map(e => e.id === mission.vehicleId ? vehicle! : e)
-    )
-    this.fleetStore.setDrivers(
-      this.fleetStore.drivers.map(d => d.id === mission.driverId ? driver! : d)
-    )
-
-    this.logAudit(AuditAction.START_MISSION, `Mission ${missionId} démarrée`)
-    return mission
+    state.recordReturn(missionId, arrival)
+    return useFleetStore.getState().missions.find((m) => m.id === missionId)!
   }
 
-  /**
-   * ===============================================
-   * PHASE 4: RETOUR DE MISSION
-   * ===============================================
-   */
-  returnMission(
-    missionId: string,
-    arrivalData: { km: number; engineHours: number; fuelLevel: number }
-  ): Mission {
-    const mission = this.fleetStore.getMissionById(missionId)
+  /** PHASE 5 : Validation du retour (→ cloturee, engin → disponible ou maintenance) */
+  validateReturn(missionId: string, isConform = true): Mission {
+    this.requirePermission('mission.validate')
+    const state = useFleetStore.getState()
+    const mission = state.missions.find((m) => m.id === missionId)
     if (!mission) throw new Error('Mission non trouvée')
-    if (mission.status !== MissionStatus.EN_COURS) {
-      throw new Error('Mission non en cours')
+    if (mission.status !== 'controle' && mission.status !== 'retour') {
+      throw new Error('Mission non en contrôle')
     }
 
-    const vehicle = this.fleetStore.getVehicleById(mission.vehicleId)
-    const driver = this.fleetStore.getDriverById(mission.driverId)
-
-    // Transitions: Mission → RETOUR, Vehicle → RETOUR_EN_ATTENTE_CONTROLE
-    mission.status = MissionStatus.RETOUR
-    mission.arrivalKm = arrivalData.km
-    mission.arrivalTime = new Date().toISOString()
-
-    vehicle!.status = VehicleStatus.RETOUR_EN_ATTENTE_CONTROLE
-    vehicle!.km = arrivalData.km
-    vehicle!.engineHours = arrivalData.engineHours
-    vehicle!.fuelLevel = arrivalData.fuelLevel
-
-    driver!.status = DriverStatus.DISPONIBLE
-
-    this.fleetStore.setMissions(
-      this.fleetStore.missions.map(m => m.id === missionId ? mission : m)
-    )
-    this.fleetStore.setEngins(
-      this.fleetStore.engins.map(e => e.id === mission.vehicleId ? vehicle! : e)
-    )
-    this.fleetStore.setDrivers(
-      this.fleetStore.drivers.map(d => d.id === mission.driverId ? driver! : d)
-    )
-
-    // Auto-générer alerte
-    const alert: Alert = {
-      id: `ALR-${Date.now()}`,
-      missionId,
-      type: AlertType.RETURN_PENDING,
-      message: `Mission ${missionId} en attente de validation`,
-      createdAt: new Date().toISOString()
-    }
-    this.fleetStore.setAlerts([...this.fleetStore.alerts, alert])
-
-    this.logAudit(AuditAction.RETURN_MISSION, `Mission ${missionId} retournée`)
-    return mission
+    if (isConform) state.validateReturn(missionId)
+    else state.sendToMaintenance(missionId)
+    return useFleetStore.getState().missions.find((m) => m.id === missionId)!
   }
 
-  /**
-   * ===============================================
-   * PHASE 5: VALIDATION DE RETOUR
-   * ===============================================
-   */
-  validateReturn(missionId: string, isConform: boolean = true): Mission {
-    const mission = this.fleetStore.getMissionById(missionId)
-    if (!mission) throw new Error('Mission non trouvée')
-    if (mission.status !== MissionStatus.RETOUR) {
-      throw new Error('Mission non en retour')
-    }
-
-    const vehicle = this.fleetStore.getVehicleById(mission.vehicleId)
-
-    // Transition: Mission → CLOTUREE ou CLOTUREE_AVEC_ANOMALIE
-    mission.status = isConform
-      ? MissionStatus.CLOTUREE
-      : MissionStatus.CLOTUREE_AVEC_ANOMALIE
-
-    vehicle!.status = VehicleStatus.DISPONIBLE
-
-    this.fleetStore.setMissions(
-      this.fleetStore.missions.map(m => m.id === missionId ? mission : m)
-    )
-    this.fleetStore.setEngins(
-      this.fleetStore.engins.map(e => e.id === mission.vehicleId ? vehicle! : e)
-    )
-
-    this.logAudit(
-      AuditAction.VALIDATE_RETURN,
-      `Mission ${missionId} validée (${isConform ? 'conforme' : 'anomalie'})`
-    )
-
-    return mission
+  /** Carburant */
+  recordFuel(entry: Omit<FuelEntry, 'id'>): void {
+    this.requirePermission('fuel.create')
+    useFleetStore.getState().addFuelEntry(entry)
   }
 
-  /**
-   * ===============================================
-   * CARBURANT
-   * ===============================================
-   */
-  recordFuel(
-    missionId: string,
-    fuelData: {
-      quantity: number
-      cost: number
-      station: string
-      receiptUrl: string
-    }
-  ): FuelEntry {
-    const mission = this.fleetStore.getMissionById(missionId)
-    if (!mission) throw new Error('Mission non trouvée')
-
-    const entry: FuelEntry = {
-      id: `FUL-${Date.now()}`,
-      missionId,
-      quantity: fuelData.quantity,
-      cost: fuelData.cost,
-      station: fuelData.station,
-      receiptUrl: fuelData.receiptUrl,
-      createdAt: new Date().toISOString()
-    }
-
-    this.fleetStore.setFuelEntries([...this.fleetStore.fuelEntries, entry])
-    this.logAudit(
-      AuditAction.FUEL_ENTRY_CREATED,
-      `${fuelData.quantity}L @ ${fuelData.station}`
-    )
-
-    return entry
-  }
-
-  /**
-   * ===============================================
-   * MAINTENANCE
-   * ===============================================
-   */
-  sendVehicleToMaintenance(vehicleId: string, reason: string): Vehicle {
-    const vehicle = this.fleetStore.getVehicleById(vehicleId)
-    if (!vehicle) throw new Error('Véhicule non trouvé')
-
-    vehicle.status = VehicleStatus.MAINTENANCE
-
-    this.fleetStore.setEngins(
-      this.fleetStore.engins.map(e => e.id === vehicleId ? vehicle : e)
-    )
-
-    this.logAudit(AuditAction.SEND_MAINTENANCE, reason)
-    return vehicle
-  }
-
-  releaseVehicle(vehicleId: string): Vehicle {
-    const vehicle = this.fleetStore.getVehicleById(vehicleId)
-    if (!vehicle) throw new Error('Véhicule non trouvé')
-
-    vehicle.status = VehicleStatus.DISPONIBLE
-
-    this.fleetStore.setEngins(
-      this.fleetStore.engins.map(e => e.id === vehicleId ? vehicle : e)
-    )
-
-    this.logAudit(AuditAction.RELEASE_MAINTENANCE, 'Véhicule libéré de maintenance')
-    return vehicle
-  }
-
-  /**
-   * ===============================================
-   * QUERIES
-   * ===============================================
-   */
+  /** Requêtes */
   getEligibleVehicles(): Vehicle[] {
-    return this.fleetStore.getEligibleVehicles()
+    return useFleetStore.getState().vehicles.filter((v) => v.status === 'disponible')
   }
 
-  getEligibleDrivers(): DriverProfile[] {
-    return this.fleetStore.getEligibleDrivers()
+  getEligibleDrivers(): Driver[] {
+    return useFleetStore.getState().drivers.filter((d) => d.status === 'disponible')
   }
 
   getDriverMissions(driverId: string): Mission[] {
-    return this.fleetStore.getDriverMissions(driverId)
+    return useFleetStore.getState().missions.filter((m) => m.driverId === driverId)
   }
 
   getMissionFuelEntries(missionId: string): FuelEntry[] {
-    return this.fleetStore.getMissionFuelEntries(missionId)
-  }
-
-  /**
-   * ===============================================
-   * AUDIT
-   * ===============================================
-   */
-  private logAudit(action: AuditAction, description: string) {
-    const log: AuditLog = {
-      id: `AUD-${Date.now()}`,
-      action,
-      description,
-      actorId: this.currentActorId,
-      actorRole: this.currentActorRole,
-      timestamp: new Date().toISOString()
-    }
-
-    this.fleetStore.setAuditLogs([...this.fleetStore.auditLogs, log])
+    return useFleetStore.getState().fuelEntries.filter((f) => f.missionId === missionId)
   }
 }
 
