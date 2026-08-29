@@ -4,7 +4,7 @@
  */
 
 import { missionOrchestrator } from './MissionOrchestrator'
-import type { Mission, FuelEntry, CounterReading, UserRole } from '@/types'
+import type { Mission, FuelEntry, CounterReading, UserRole, Vehicle, Driver } from '@/types'
 
 interface ApiConfig {
   useBackend: boolean
@@ -14,11 +14,24 @@ interface ApiConfig {
 class ApiIntegrator {
   private config: ApiConfig = {
     useBackend: (import.meta as any).env?.VITE_USE_BACKEND === 'true',
-    backendUrl: (import.meta as any).env?.VITE_API_URL || 'http://localhost:8080',
+    backendUrl: (import.meta as any).env?.VITE_API_URL || 'http://localhost:9090',
+  }
+
+  private normalizeStatusToFrontend(status: string): string {
+    return status.toLowerCase()
   }
 
   setConfig(config: Partial<ApiConfig>) {
     this.config = { ...this.config, ...config }
+  }
+
+  private async get<T>(path: string): Promise<T> {
+    const response = await fetch(`${this.config.backendUrl}/api${path}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    })
+    if (!response.ok) throw new Error(`API ${path}: ${response.status}`)
+    return response.json() as Promise<T>
   }
 
   private async post<T>(path: string, body: unknown): Promise<T> {
@@ -29,6 +42,42 @@ class ApiIntegrator {
     })
     if (!response.ok) throw new Error(`API ${path}: ${response.status}`)
     return response.json() as Promise<T>
+  }
+
+  async getVehicles(): Promise<Vehicle[]> {
+    try {
+      if (this.config.useBackend) {
+        const vehicles = await this.get<any[]>('/vehicles')
+        return vehicles.map(v => ({ ...v, status: this.normalizeStatusToFrontend(v.status) } as Vehicle))
+      }
+    } catch (err) {
+      // Fallback to mock
+    }
+    return []
+  }
+
+  async getDrivers(): Promise<Driver[]> {
+    try {
+      if (this.config.useBackend) {
+        const drivers = await this.get<any[]>('/drivers')
+        return drivers.map(d => ({ ...d, status: this.normalizeStatusToFrontend(d.status) } as Driver))
+      }
+    } catch (err) {
+      // Fallback to mock
+    }
+    return []
+  }
+
+  async getMissions(): Promise<Mission[]> {
+    try {
+      if (this.config.useBackend) {
+        const missions = await this.get<any[]>('/missions')
+        return missions.map(m => ({ ...m, status: this.normalizeStatusToFrontend(m.status) } as Mission))
+      }
+    } catch (err) {
+      // Fallback to mock
+    }
+    return []
   }
 
   async createMission(

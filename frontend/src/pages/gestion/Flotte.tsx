@@ -1,11 +1,25 @@
-import { FormEvent, useMemo, useState } from 'react'
+import { FormEvent, useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useFleetStore } from '@/store/fleetStore'
 import { Drawer, StatusBadge } from '@/components/ui'
 import { Vehicle } from '@/types'
+import { apiIntegrator } from '@/services/ApiIntegrator'
 
 export function Flotte() {
-  const { vehicles, addVehicle } = useFleetStore()
+  const { vehicles: mockVehicles, addVehicle } = useFleetStore()
+  const [vehicles, setVehicles] = useState<Vehicle[]>(mockVehicles)
+
+  useEffect(() => {
+    const loadVehicles = async () => {
+      try {
+        const data = await apiIntegrator.getVehicles()
+        if (data.length > 0) setVehicles(data)
+      } catch (err) {
+        setVehicles(mockVehicles)
+      }
+    }
+    loadVehicles()
+  }, [])
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('')

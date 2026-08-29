@@ -34,10 +34,8 @@ export function Missions() {
         <input placeholder="Rechercher..." value={search} onChange={(e) => setSearch(e.target.value)} />
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
           <option value="">Statut</option>
-          <option value="planifiee">Planifiée</option>
           <option value="affectee">Affectée</option>
           <option value="en_cours">En cours</option>
-          <option value="retour">Retour</option>
           <option value="controle">Contrôle</option>
           <option value="cloturee">Clôturée</option>
         </select>
