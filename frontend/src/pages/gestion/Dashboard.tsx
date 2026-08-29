@@ -4,6 +4,7 @@ import { useFleetStore } from '@/store/fleetStore'
 import { KPICard, MissionBadge } from '@/components/ui'
 import { formatFCFA } from '@/utils/format'
 import { VEHICLE_STATUS_LABELS, VehicleStatus } from '@/types'
+import { AlertCircle, Wrench, Clock } from 'lucide-react'
 
 export function Dashboard() {
   const user = useAuthStore((s) => s.user)
@@ -46,24 +47,24 @@ export function Dashboard() {
       <div className="card section">
         <div className="card-title">Actions à traiter</div>
         <div className="stat-row">
-          <span>
-            🔴 <strong>{retoursAControler}</strong> retour(s) à contrôler
+          <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <AlertCircle size={20} color="var(--red)" /> <strong>{retoursAControler}</strong> retour(s) à contrôler
           </span>
           <Link to="/controles" className="link-btn">
             Traiter
           </Link>
         </div>
         <div className="stat-row">
-          <span>
-            🟠 <strong>{enginsAction}</strong> engin(s) nécessitent une action
+          <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Wrench size={20} color="var(--orange)" /> <strong>{enginsAction}</strong> engin(s) nécessitent une action
           </span>
           <Link to="/flotte" className="link-btn">
             Voir
           </Link>
         </div>
         <div className="stat-row">
-          <span>
-            🟡 <strong>{contratsExpirant}</strong> contrat(s) externe(s) arrivent à échéance
+          <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Clock size={20} color="var(--yellow)" /> <strong>{contratsExpirant}</strong> contrat(s) externe(s) arrivent à échéance
           </span>
           <Link to="/flotte" className="link-btn">
             Voir

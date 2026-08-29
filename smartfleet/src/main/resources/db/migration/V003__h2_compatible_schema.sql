@@ -17,6 +17,8 @@ CREATE TABLE IF NOT EXISTS drivers (
   email VARCHAR(100) NOT NULL UNIQUE,
   full_name VARCHAR(100) NOT NULL,
   status VARCHAR(20) NOT NULL DEFAULT 'DISPONIBLE',
+  skills VARCHAR(1000),
+  phone VARCHAR(20),
   created_at TIMESTAMP NOT NULL,
   updated_at TIMESTAMP
 );
