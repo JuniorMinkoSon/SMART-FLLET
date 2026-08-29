@@ -3,11 +3,13 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 import { useFleetStore } from '@/store/fleetStore'
 import { Drawer } from '@/components/ui'
+import { Home, Wrench, ListChecks, RotateCw, Users, Fuel, DollarSign, Bell, Settings, User, AlertCircle, AlertTriangle, Info } from 'lucide-react'
+import { SmartFleetLogo } from '@/components/SmartFleetLogo'
 
 interface NavItem {
   to: string
   label: string
-  icon: string
+  Icon: any
 }
 
 interface NavGroup {
@@ -16,43 +18,43 @@ interface NavGroup {
 }
 
 const GESTIONNAIRE_NAV: NavGroup[] = [
-  { items: [{ to: '/dashboard', label: 'Accueil', icon: '🏠' }] },
+  { items: [{ to: '/dashboard', label: 'Accueil', Icon: Home }] },
   {
     title: 'Exploitation',
     items: [
-      { to: '/flotte', label: 'Flotte', icon: '🚜' },
-      { to: '/missions', label: 'Missions', icon: '📋' },
-      { to: '/controles', label: 'Départs & retours', icon: '🔁' },
+      { to: '/flotte', label: 'Flotte', Icon: Wrench },
+      { to: '/missions', label: 'Missions', Icon: ListChecks },
+      { to: '/controles', label: 'Départs & retours', Icon: RotateCw },
     ],
   },
   {
     title: 'Ressources',
     items: [
-      { to: '/conducteurs', label: 'Conducteurs', icon: '👷' },
-      { to: '/carburant', label: 'Carburant', icon: '⛽' },
-      { to: '/depenses', label: 'Dépenses', icon: '💰' },
+      { to: '/conducteurs', label: 'Conducteurs', Icon: Users },
+      { to: '/carburant', label: 'Carburant', Icon: Fuel },
+      { to: '/depenses', label: 'Dépenses', Icon: DollarSign },
     ],
   },
   {
     title: 'Pilotage',
-    items: [{ to: '/alertes', label: 'Alertes', icon: '🔔' }],
+    items: [{ to: '/alertes', label: 'Alertes', Icon: Bell }],
   },
 ]
 
 const ADMIN_EXTRA: NavGroup = {
   title: 'Administration',
   items: [
-    { to: '/utilisateurs', label: 'Utilisateurs', icon: '👥' },
-    { to: '/parametres', label: 'Paramètres', icon: '⚙️' },
+    { to: '/utilisateurs', label: 'Utilisateurs', Icon: Users },
+    { to: '/parametres', label: 'Paramètres', Icon: Settings },
   ],
 }
 
 const MOBILE_NAV: NavItem[] = [
-  { to: '/dashboard', label: 'Accueil', icon: '🏠' },
-  { to: '/flotte', label: 'Flotte', icon: '🚜' },
-  { to: '/missions', label: 'Missions', icon: '📋' },
-  { to: '/alertes', label: 'Alertes', icon: '🔔' },
-  { to: '/parametres', label: 'Profil', icon: '👤' },
+  { to: '/dashboard', label: 'Accueil', Icon: Home },
+  { to: '/flotte', label: 'Flotte', Icon: Wrench },
+  { to: '/missions', label: 'Missions', Icon: ListChecks },
+  { to: '/alertes', label: 'Alertes', Icon: Bell },
+  { to: '/parametres', label: 'Profil', Icon: User },
 ]
 
 export function AppLayout({ children, title }: { children: ReactNode; title: string }) {
@@ -66,14 +68,15 @@ export function AppLayout({ children, title }: { children: ReactNode; title: str
   const groups =
     user?.role === 'admin' ? [...GESTIONNAIRE_NAV, ADMIN_EXTRA] : GESTIONNAIRE_NAV
 
-  const sevIcon = { urgent: '🔴', attention: '🟠', info: '🟡' }
+  const sevIcon = { urgent: AlertCircle, attention: AlertTriangle, info: Info }
   const sevLabel = { urgent: 'URGENT', attention: 'ATTENTION', info: 'INFO' }
 
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div className="sidebar-logo">
-          SMART <span>FLEET</span>
+        <div className="sidebar-logo" style={{ display: 'flex', alignItems: 'center' }}>
+          <SmartFleetLogo />
+          <span>SMART <span>FLEET</span></span>
         </div>
         {groups.map((g, i) => (
           <div className="sidebar-group" key={i}>
@@ -84,7 +87,7 @@ export function AppLayout({ children, title }: { children: ReactNode; title: str
                 to={item.to}
                 className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
               >
-                <span className="icon">{item.icon}</span>
+                <item.Icon size={18} className="icon" />
                 <span className="label">{item.label}</span>
               </NavLink>
             ))}
@@ -104,7 +107,7 @@ export function AppLayout({ children, title }: { children: ReactNode; title: str
               }}
               aria-label="Alertes"
             >
-              🔔
+              <Bell size={20} />
               {unread > 0 && <span className="bell-badge">{unread}</span>}
             </button>
             <div className="user-chip">
@@ -132,26 +135,33 @@ export function AppLayout({ children, title }: { children: ReactNode; title: str
             to={item.to}
             className={({ isActive }) => (isActive ? 'active' : '')}
           >
-            <span className="icon">{item.icon}</span>
+            <item.Icon size={20} className="icon" />
             {item.label}
           </NavLink>
         ))}
       </nav>
 
-      <Drawer open={alertsOpen} title={`🔔 Alertes (${alerts.length})`} onClose={() => setAlertsOpen(false)}>
-        {alerts.map((a) => (
-          <div className="alert-item" key={a.id}>
-            <div className="alert-sev">{sevIcon[a.severity]}</div>
-            <div style={{ flex: 1 }}>
-              <div className="small strong muted">{sevLabel[a.severity]}</div>
-              <div className="strong">{a.title}</div>
-              <div className="muted small">{a.detail}</div>
-              <div className="small" style={{ color: 'var(--text-3)', marginTop: 4 }}>
-                {a.time}
+      <Drawer
+        open={alertsOpen}
+        title={`Alertes (${alerts.length})`}
+        onClose={() => setAlertsOpen(false)}
+      >
+        {alerts.map((a) => {
+          const SevIcon = sevIcon[a.severity]
+          return (
+            <div className="alert-item" key={a.id}>
+              <div className="alert-sev"><SevIcon size={18} color={a.severity === 'urgent' ? 'var(--red)' : a.severity === 'attention' ? 'var(--orange)' : 'var(--yellow)'} /></div>
+              <div style={{ flex: 1 }}>
+                <div className="small strong muted">{sevLabel[a.severity]}</div>
+                <div className="strong">{a.title}</div>
+                <div className="muted small">{a.detail}</div>
+                <div className="small" style={{ color: 'var(--text-3)', marginTop: 4 }}>
+                  {a.time}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </Drawer>
     </div>
   )

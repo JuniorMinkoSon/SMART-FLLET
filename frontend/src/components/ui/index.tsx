@@ -1,4 +1,5 @@
 import { ReactNode } from 'react'
+import { X } from 'lucide-react'
 import {
   VehicleStatus,
   MissionStatus,
@@ -66,7 +67,7 @@ export function Drawer({ open, title, onClose, children, footer }: DrawerProps) 
         <div className="drawer-header">
           <div className="drawer-title">{title}</div>
           <button className="close-btn" onClick={onClose} aria-label="Fermer">
-            ✕
+            <X size={20} />
           </button>
         </div>
         <div className="drawer-body">{children}</div>

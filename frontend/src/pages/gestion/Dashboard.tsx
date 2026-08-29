@@ -5,7 +5,7 @@ import { KPICard, MissionBadge } from '@/components/ui'
 import { FleetChart } from '@/components/FleetChart'
 import { formatFCFA } from '@/utils/format'
 import { VEHICLE_STATUS_LABELS, VehicleStatus } from '@/types'
-import { AlertCircle, Wrench, Clock, ChevronRight, Home } from 'lucide-react'
+import { AlertCircle, Wrench, Clock, Home } from 'lucide-react'
 
 export function Dashboard() {
   const user = useAuthStore((s) => s.user)
