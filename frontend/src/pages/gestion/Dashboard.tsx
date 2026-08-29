@@ -2,9 +2,10 @@ import { Link } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 import { useFleetStore } from '@/store/fleetStore'
 import { KPICard, MissionBadge } from '@/components/ui'
+import { FleetChart } from '@/components/FleetChart'
 import { formatFCFA } from '@/utils/format'
 import { VEHICLE_STATUS_LABELS, VehicleStatus } from '@/types'
-import { AlertCircle, Wrench, Clock } from 'lucide-react'
+import { AlertCircle, Wrench, Clock, ChevronRight, Home } from 'lucide-react'
 
 export function Dashboard() {
   const user = useAuthStore((s) => s.user)
@@ -30,11 +31,14 @@ export function Dashboard() {
 
   return (
     <div className="page">
-      <div className="page-header">
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h1 className="page-title">Bonjour, {user?.name}</h1>
           <p className="page-subtitle">Voici l'état de votre flotte aujourd'hui — {today}</p>
         </div>
+        <button className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: 8 }} onClick={() => window.location.reload()}>
+          <Home size={18} /> Accueil
+        </button>
       </div>
 
       <div className="kpi-grid">
@@ -72,9 +76,14 @@ export function Dashboard() {
         </div>
       </div>
 
+      <div className="card section">
+        <div className="card-title">État du parc (Graphique)</div>
+        <FleetChart data={parcStatuses.map(s => ({ status: VEHICLE_STATUS_LABELS[s], count: count(s) }))} />
+      </div>
+
       <div className="grid-2 section">
         <div className="card">
-          <div className="card-title">État du parc</div>
+          <div className="card-title">État du parc (Détail)</div>
           {parcStatuses.map((s) => (
             <div className="stat-row" key={s}>
               <span>{VEHICLE_STATUS_LABELS[s]}</span>
