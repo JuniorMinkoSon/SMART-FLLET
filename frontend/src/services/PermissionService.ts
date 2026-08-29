@@ -28,7 +28,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'assignment.create', 'assignment.view_all',
     'mission.create', 'mission.assign', 'mission.view_all', 'mission.return',
     'mission.validate',
-    'fuel.view_operational', 'fuel.view_financial',
+    'fuel.create', 'fuel.view_operational', 'fuel.view_financial',
     'incident.create', 'incident.view_all',
     'dashboard.gestionnaire', 'dashboard.fleet_command',
   ],
