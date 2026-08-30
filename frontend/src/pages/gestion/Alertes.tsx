@@ -1,12 +1,12 @@
-import { AlertCircle, Bell } from 'lucide-react'
 import { useFleetStore } from '@/store/fleetStore'
 import { AlertSeverity } from '@/types'
+import { AlertCircle, AlertTriangle, Info, Bell } from 'lucide-react'
 
 const SEV_ORDER: AlertSeverity[] = ['urgent', 'attention', 'info']
-const SEV_META: Record<AlertSeverity, { color: string; label: string }> = {
-  urgent: { color: '#d32f2f', label: 'URGENT' },
-  attention: { color: '#f57c00', label: 'ATTENTION' },
-  info: { color: '#0288d1', label: 'INFO' },
+const SEV_META: Record<AlertSeverity, { Icon: any; label: string }> = {
+  urgent: { Icon: AlertCircle, label: 'URGENT' },
+  attention: { Icon: AlertTriangle, label: 'ATTENTION' },
+  info: { Icon: Info, label: 'INFO' },
 }
 
 export function Alertes() {
@@ -15,23 +15,23 @@ export function Alertes() {
   return (
     <div className="page" style={{ maxWidth: 800 }}>
       <div className="page-header">
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <Bell size={28} />
-          <div>
-            <h1 className="page-title">Alertes ({alerts.length})</h1>
-            <p className="page-subtitle">Toutes les alertes du parc, par niveau de priorité</p>
-          </div>
+        <div>
+          <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Bell size={24} /> Alertes ({alerts.length})
+          </h1>
+          <p className="page-subtitle">Toutes les alertes du parc, par niveau de priorité</p>
         </div>
       </div>
 
       {SEV_ORDER.map((sev) => {
         const items = alerts.filter((a) => a.severity === sev)
         if (!items.length) return null
+        const Meta = SEV_META[sev]
         return (
           <div className="card section" key={sev}>
-            <div className="card-title" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <AlertCircle size={20} style={{ color: SEV_META[sev].color }} />
-              {SEV_META[sev].label}
+            <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Meta.Icon size={20} color={sev === 'urgent' ? 'var(--red)' : sev === 'attention' ? 'var(--orange)' : 'var(--yellow)'} />
+              {Meta.label}
             </div>
             {items.map((a) => (
               <div className="alert-item" key={a.id}>

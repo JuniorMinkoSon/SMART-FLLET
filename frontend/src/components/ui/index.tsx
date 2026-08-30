@@ -1,9 +1,11 @@
 import { ReactNode } from 'react'
+import { X } from 'lucide-react'
 import {
   VehicleStatus,
   MissionStatus,
   VEHICLE_STATUS_LABELS,
   MISSION_STATUS_LABELS,
+  Driver,
 } from '@/types'
 
 export function StatusBadge({ status }: { status: VehicleStatus }) {
@@ -24,8 +26,13 @@ export function MissionBadge({ status }: { status: MissionStatus }) {
   )
 }
 
-export function DriverBadge({ status }: { status: 'disponible' | 'en_mission' | 'repos' }) {
-  const labels = { disponible: 'Disponible', en_mission: 'En mission', repos: 'Repos' }
+export function DriverBadge({ status }: { status: Driver['status'] }) {
+  const labels = {
+    disponible: 'Disponible',
+    reserve: 'Réservé',
+    en_mission: 'En mission',
+    indisponible: 'Indisponible',
+  }
   return (
     <span className={`badge badge-${status}`}>
       <span className="dot" />
@@ -60,7 +67,7 @@ export function Drawer({ open, title, onClose, children, footer }: DrawerProps) 
         <div className="drawer-header">
           <div className="drawer-title">{title}</div>
           <button className="close-btn" onClick={onClose} aria-label="Fermer">
-            ✕
+            <X size={20} />
           </button>
         </div>
         <div className="drawer-body">{children}</div>

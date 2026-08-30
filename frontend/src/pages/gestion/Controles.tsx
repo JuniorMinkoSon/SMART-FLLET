@@ -1,14 +1,17 @@
 import { useState } from 'react'
 import { useFleetStore } from '@/store/fleetStore'
+import { useMissionWorkflow } from '@/hooks/useMissionWorkflow'
 import { EmptyState, MissionBadge, Modal } from '@/components/ui'
 import { formatNumber } from '@/utils/format'
 import { Mission } from '@/types'
 
 export function Controles() {
-  const { missions, vehicles, drivers, validateReturn, sendToMaintenance } = useFleetStore()
+  const { vehicles, drivers } = useFleetStore()
+  const { getVisibleMissions, validateReturn } = useMissionWorkflow()
   const [confirm, setConfirm] = useState<{ mission: Mission; action: 'valider' | 'maintenance' } | null>(null)
 
-  const toControl = missions.filter((m) => m.status === 'controle' || m.status === 'retour')
+  const missions = getVisibleMissions()
+  const toControl = missions.filter((m) => m.status === 'controle')
   const departures = missions.filter((m) => m.status === 'affectee')
 
   const checklistLabels: Record<string, string> = {
@@ -152,8 +155,8 @@ export function Controles() {
               className={`btn ${confirm?.action === 'valider' ? 'btn-success' : 'btn-danger'}`}
               onClick={() => {
                 if (!confirm) return
-                if (confirm.action === 'valider') validateReturn(confirm.mission.id)
-                else sendToMaintenance(confirm.mission.id)
+                if (confirm.action === 'valider') validateReturn(confirm.mission.id, true)
+                else validateReturn(confirm.mission.id, false)
                 setConfirm(null)
               }}
             >

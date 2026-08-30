@@ -34,7 +34,7 @@ export function DriverHome() {
                 ENREGISTRER LE RETOUR
               </button>
             )}
-            {(mission.status === 'controle' || mission.status === 'retour') && (
+            {mission.status === 'controle' && (
               <p className="muted">Retour enregistré — en attente de contrôle par le gestionnaire.</p>
             )}
           </>

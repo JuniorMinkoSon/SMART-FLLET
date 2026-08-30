@@ -1,10 +1,13 @@
 import { FormEvent, useState } from 'react'
 import { useFleetStore } from '@/store/fleetStore'
+import { useMissionWorkflow } from '@/hooks/useMissionWorkflow'
 import { Drawer } from '@/components/ui'
 import { formatFCFA, formatNumber } from '@/utils/format'
 
 export function Carburant() {
-  const { fuelEntries, vehicles, missions, addFuelEntry } = useFleetStore()
+  const { fuelEntries, vehicles, missions } = useFleetStore()
+  const { recordFuel } = useMissionWorkflow()
+  const [error, setError] = useState('')
   const [addOpen, setAddOpen] = useState(false)
   const [form, setForm] = useState({ vehicleId: '', liters: '', amount: '', station: '', km: '' })
 
@@ -37,20 +40,25 @@ export function Carburant() {
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
-    const activeMission = missions.find(
-      (m) => m.vehicleId === form.vehicleId && m.status !== 'cloturee'
-    )
-    addFuelEntry({
-      vehicleId: form.vehicleId,
-      missionId: activeMission?.id,
-      liters: Number(form.liters),
-      amount: Number(form.amount),
-      station: form.station || undefined,
-      km: form.km ? Number(form.km) : undefined,
-      date: new Date().toISOString().slice(0, 10),
-    })
-    setAddOpen(false)
-    setForm({ vehicleId: '', liters: '', amount: '', station: '', km: '' })
+    try {
+      setError('')
+      const activeMission = missions.find(
+        (m) => m.vehicleId === form.vehicleId && m.status !== 'cloturee'
+      )
+      recordFuel({
+        vehicleId: form.vehicleId,
+        missionId: activeMission?.id,
+        liters: Number(form.liters),
+        amount: Number(form.amount),
+        station: form.station || undefined,
+        km: form.km ? Number(form.km) : undefined,
+        date: new Date().toISOString().slice(0, 10),
+      })
+      setAddOpen(false)
+      setForm({ vehicleId: '', liters: '', amount: '', station: '', km: '' })
+    } catch (err) {
+      setError((err as Error).message)
+    }
   }
 
   return (
@@ -64,6 +72,12 @@ export function Carburant() {
           + Ravitaillement
         </button>
       </div>
+
+      {error && (
+        <div className="card" style={{ borderLeft: '4px solid var(--red)', padding: 12, marginBottom: 16 }}>
+          <strong style={{ color: 'var(--red)' }}>Erreur :</strong> {error}
+        </div>
+      )}
 
       <div className="kpi-grid">
         <div className="card">

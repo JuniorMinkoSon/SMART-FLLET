@@ -88,11 +88,11 @@ export const useFleetStore = create<FleetState>((set, get) => ({
       missions: [mission, ...s.missions],
       vehicles: s.vehicles.map((v) =>
         v.id === data.vehicleId
-          ? { ...v, status: 'affecte', site: data.site, driverId: data.driverId }
+          ? { ...v, status: 'reserve', site: data.site, driverId: data.driverId }
           : v
       ),
       drivers: s.drivers.map((d) =>
-        d.id === data.driverId ? { ...d, status: 'en_mission' } : d
+        d.id === data.driverId ? { ...d, status: 'reserve' } : d
       ),
     }))
     return mission
@@ -102,6 +102,7 @@ export const useFleetStore = create<FleetState>((set, get) => ({
     set((s) => {
       const mission = s.missions.find((m) => m.id === missionId)
       if (!mission) return s
+      if (mission.status !== 'affectee') return s
       return {
         missions: s.missions.map((m) =>
           m.id === missionId
@@ -124,6 +125,9 @@ export const useFleetStore = create<FleetState>((set, get) => ({
               }
             : v
         ),
+        drivers: s.drivers.map((d) =>
+          d.id === mission.driverId ? { ...d, status: 'en_mission' } : d
+        ),
       }
     }),
 
@@ -131,6 +135,7 @@ export const useFleetStore = create<FleetState>((set, get) => ({
     set((s) => {
       const mission = s.missions.find((m) => m.id === missionId)
       if (!mission) return s
+      if (mission.status !== 'en_cours') return s
       return {
         missions: s.missions.map((m) =>
           m.id === missionId
@@ -171,6 +176,7 @@ export const useFleetStore = create<FleetState>((set, get) => ({
     set((s) => {
       const mission = s.missions.find((m) => m.id === missionId)
       if (!mission) return s
+      if (mission.status !== 'controle') return s
       return {
         missions: s.missions.map((m) =>
           m.id === missionId

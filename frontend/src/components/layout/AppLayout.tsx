@@ -1,14 +1,15 @@
 import { ReactNode, useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { Home, Boxes, CheckSquare, ArrowRightLeft, Users, Zap, DollarSign, Bell, Settings, User, AlertCircle } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useFleetStore } from '@/store/fleetStore'
 import { Drawer } from '@/components/ui'
+import { Home, Wrench, ListChecks, RotateCw, Users, Fuel, DollarSign, Bell, Settings, User, AlertCircle, AlertTriangle, Info } from 'lucide-react'
+import { SmartFleetLogo } from '@/components/SmartFleetLogo'
 
 interface NavItem {
   to: string
   label: string
-  icon: React.ReactNode
+  Icon: any
 }
 
 interface NavGroup {
@@ -17,43 +18,43 @@ interface NavGroup {
 }
 
 const GESTIONNAIRE_NAV: NavGroup[] = [
-  { items: [{ to: '/dashboard', label: 'Accueil', icon: <Home size={20} /> }] },
+  { items: [{ to: '/dashboard', label: 'Accueil', Icon: Home }] },
   {
     title: 'Exploitation',
     items: [
-      { to: '/flotte', label: 'Flotte', icon: <Boxes size={20} /> },
-      { to: '/missions', label: 'Missions', icon: <CheckSquare size={20} /> },
-      { to: '/controles', label: 'Départs & retours', icon: <ArrowRightLeft size={20} /> },
+      { to: '/flotte', label: 'Flotte', Icon: Wrench },
+      { to: '/missions', label: 'Missions', Icon: ListChecks },
+      { to: '/controles', label: 'Départs & retours', Icon: RotateCw },
     ],
   },
   {
     title: 'Ressources',
     items: [
-      { to: '/conducteurs', label: 'Conducteurs', icon: <Users size={20} /> },
-      { to: '/carburant', label: 'Carburant', icon: <Zap size={20} /> },
-      { to: '/depenses', label: 'Dépenses', icon: <DollarSign size={20} /> },
+      { to: '/conducteurs', label: 'Conducteurs', Icon: Users },
+      { to: '/carburant', label: 'Carburant', Icon: Fuel },
+      { to: '/depenses', label: 'Dépenses', Icon: DollarSign },
     ],
   },
   {
     title: 'Pilotage',
-    items: [{ to: '/alertes', label: 'Alertes', icon: <Bell size={20} /> }],
+    items: [{ to: '/alertes', label: 'Alertes', Icon: Bell }],
   },
 ]
 
 const ADMIN_EXTRA: NavGroup = {
   title: 'Administration',
   items: [
-    { to: '/utilisateurs', label: 'Utilisateurs', icon: <Users size={20} /> },
-    { to: '/parametres', label: 'Paramètres', icon: <Settings size={20} /> },
+    { to: '/utilisateurs', label: 'Utilisateurs', Icon: Users },
+    { to: '/parametres', label: 'Paramètres', Icon: Settings },
   ],
 }
 
 const MOBILE_NAV: NavItem[] = [
-  { to: '/dashboard', label: 'Accueil', icon: <Home size={20} /> },
-  { to: '/flotte', label: 'Flotte', icon: <Boxes size={20} /> },
-  { to: '/missions', label: 'Missions', icon: <CheckSquare size={20} /> },
-  { to: '/alertes', label: 'Alertes', icon: <Bell size={20} /> },
-  { to: '/parametres', label: 'Profil', icon: <User size={20} /> },
+  { to: '/dashboard', label: 'Accueil', Icon: Home },
+  { to: '/flotte', label: 'Flotte', Icon: Wrench },
+  { to: '/missions', label: 'Missions', Icon: ListChecks },
+  { to: '/alertes', label: 'Alertes', Icon: Bell },
+  { to: '/parametres', label: 'Profil', Icon: User },
 ]
 
 export function AppLayout({ children, title }: { children: ReactNode; title: string }) {
@@ -67,15 +68,15 @@ export function AppLayout({ children, title }: { children: ReactNode; title: str
   const groups =
     user?.role === 'admin' ? [...GESTIONNAIRE_NAV, ADMIN_EXTRA] : GESTIONNAIRE_NAV
 
-  const sevIcon = { urgent: AlertCircle, attention: AlertCircle, info: AlertCircle }
+  const sevIcon = { urgent: AlertCircle, attention: AlertTriangle, info: Info }
   const sevLabel = { urgent: 'URGENT', attention: 'ATTENTION', info: 'INFO' }
-  const sevColor = { urgent: '#d32f2f', attention: '#f57c00', info: '#0288d1' }
 
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div className="sidebar-logo">
-          SMART <span>FLEET</span>
+        <div className="sidebar-logo" style={{ display: 'flex', alignItems: 'center' }}>
+          <SmartFleetLogo />
+          <span>SMART <span>FLEET</span></span>
         </div>
         {groups.map((g, i) => (
           <div className="sidebar-group" key={i}>
@@ -86,7 +87,7 @@ export function AppLayout({ children, title }: { children: ReactNode; title: str
                 to={item.to}
                 className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
               >
-                <span className="icon">{item.icon}</span>
+                <item.Icon size={18} className="icon" />
                 <span className="label">{item.label}</span>
               </NavLink>
             ))}
@@ -134,18 +135,22 @@ export function AppLayout({ children, title }: { children: ReactNode; title: str
             to={item.to}
             className={({ isActive }) => (isActive ? 'active' : '')}
           >
-            <span className="icon">{item.icon}</span>
+            <item.Icon size={20} className="icon" />
             {item.label}
           </NavLink>
         ))}
       </nav>
 
-      <Drawer open={alertsOpen} title={`Alertes (${alerts.length})`} onClose={() => setAlertsOpen(false)}>
+      <Drawer
+        open={alertsOpen}
+        title={`Alertes (${alerts.length})`}
+        onClose={() => setAlertsOpen(false)}
+      >
         {alerts.map((a) => {
-          const IconComponent = sevIcon[a.severity]
+          const SevIcon = sevIcon[a.severity]
           return (
             <div className="alert-item" key={a.id}>
-              <IconComponent size={20} style={{ color: sevColor[a.severity], flexShrink: 0 }} />
+              <div className="alert-sev"><SevIcon size={18} color={a.severity === 'urgent' ? 'var(--red)' : a.severity === 'attention' ? 'var(--orange)' : 'var(--yellow)'} /></div>
               <div style={{ flex: 1 }}>
                 <div className="small strong muted">{sevLabel[a.severity]}</div>
                 <div className="strong">{a.title}</div>

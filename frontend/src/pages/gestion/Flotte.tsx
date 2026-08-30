@@ -1,43 +1,33 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react'
+import { FormEvent, useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useApiStore } from '@/store/apiStore'
+import { useFleetStore } from '@/store/fleetStore'
 import { Drawer, StatusBadge } from '@/components/ui'
-
-interface Vehicle {
-  id: number
-  code: string
-  type: string
-  name: string
-  plate: string
-  status: string
-  km: number
-  engine_hours: number
-  fuel_level: number
-}
+import { Vehicle } from '@/types'
+import { apiIntegrator } from '@/services/ApiIntegrator'
 
 export function Flotte() {
-  const { fetch } = useApiStore()
+  const { vehicles: mockVehicles, addVehicle } = useFleetStore()
+  const [vehicles, setVehicles] = useState<Vehicle[]>(mockVehicles)
+
+  useEffect(() => {
+    const loadVehicles = async () => {
+      try {
+        const data = await apiIntegrator.getVehicles()
+        if (data.length > 0) setVehicles(data)
+      } catch (err) {
+        setVehicles(mockVehicles)
+      }
+    }
+    loadVehicles()
+  }, [])
   const navigate = useNavigate()
-  const [vehicles, setVehicles] = useState<Vehicle[]>([])
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
+  const [ownerFilter, setOwnerFilter] = useState('')
   const [addOpen, setAddOpen] = useState(false)
+
   const [form, setForm] = useState({ code: '', type: 'Pelle', name: '', plate: '' })
-
-  // Load vehicles from API
-  useEffect(() => {
-    loadVehicles()
-  }, [])
-
-  const loadVehicles = async () => {
-    try {
-      const data = await fetch('/vehicles')
-      setVehicles(data)
-    } catch (err) {
-      console.error('Erreur chargement:', err)
-    }
-  }
 
   const types = useMemo(() => Array.from(new Set(vehicles.map((v) => v.type))), [vehicles])
 
@@ -46,27 +36,27 @@ export function Flotte() {
       return false
     if (typeFilter && v.type !== typeFilter) return false
     if (statusFilter && v.status !== statusFilter) return false
+    if (ownerFilter === 'externe' && !v.external) return false
+    if (ownerFilter === 'interne' && v.external) return false
     return true
   })
 
-  const submit = async (e: FormEvent) => {
+  const submit = (e: FormEvent) => {
     e.preventDefault()
-    try {
-      await fetch('/vehicles', {
-        method: 'POST',
-        body: JSON.stringify({
-          code: form.code,
-          type: form.type,
-          name: form.name,
-          plate: form.plate,
-        }),
-      })
-      setAddOpen(false)
-      setForm({ code: '', type: 'Pelle', name: '', plate: '' })
-      loadVehicles()
-    } catch (err) {
-      console.error('Erreur création:', err)
+    const vehicle: Omit<Vehicle, 'id'> = {
+      code: form.code,
+      type: form.type,
+      name: form.name,
+      plate: form.plate,
+      status: 'disponible',
+      km: 0,
+      engineHours: 0,
+      fuelLevel: 100,
+      condition: 'Bon',
     }
+    addVehicle(vehicle)
+    setAddOpen(false)
+    setForm({ code: '', type: 'Pelle', name: '', plate: '' })
   }
 
   return (
@@ -98,12 +88,16 @@ export function Flotte() {
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
           <option value="">Statut</option>
           <option value="disponible">Disponible</option>
-          <option value="affecte">Affecté</option>
+          <option value="reserve">Réservé</option>
           <option value="en_mission">En mission</option>
-          <option value="en_retour">En retour</option>
           <option value="controle">Contrôle</option>
           <option value="maintenance">Maintenance</option>
-          <option value="panne">Panne</option>
+          <option value="hors_service">Hors service</option>
+        </select>
+        <select value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)}>
+          <option value="">Interne / Externe</option>
+          <option value="interne">Interne</option>
+          <option value="externe">Externe</option>
         </select>
       </div>
 
@@ -122,10 +116,13 @@ export function Flotte() {
             {filtered.map((v) => (
               <tr key={v.id} className="clickable" onClick={() => navigate(`/flotte/${v.id}`)}>
                 <td className="strong">{v.code}</td>
-                <td>{v.type}</td>
-                <td>—</td>
                 <td>
-                  <StatusBadge status={v.status as any} />
+                  {v.type}
+                  {v.external && <span className="muted small"> (externe)</span>}
+                </td>
+                <td>{v.site ?? '—'}</td>
+                <td>
+                  <StatusBadge status={v.status} />
                 </td>
                 <td>
                   <button

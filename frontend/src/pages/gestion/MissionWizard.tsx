@@ -1,15 +1,18 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useFleetStore } from '@/store/fleetStore'
+import { useMissionWorkflow } from '@/hooks/useMissionWorkflow'
 import { StatusBadge } from '@/components/ui'
 import { formatFCFA } from '@/utils/format'
 
 const STEPS = ['Mission', 'Engin', 'Opérateur', 'Validation']
 
 export function MissionWizard() {
-  const { vehicles, drivers, createMission } = useFleetStore()
+  const { vehicles, drivers } = useFleetStore()
+  const { createMission } = useMissionWorkflow()
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
+  const [error, setError] = useState('')
 
   const [site, setSite] = useState('')
   const [client, setClient] = useState('')
@@ -24,17 +27,22 @@ export function MissionWizard() {
 
   const step1Valid = site && startDate && endDate && budget
 
-  const create = () => {
-    const mission = createMission({
-      site,
-      client: client || undefined,
-      vehicleId,
-      driverId,
-      startDate,
-      endDate,
-      budget: Number(budget),
-    })
-    navigate(`/missions/${mission.id}`)
+  const create = async () => {
+    try {
+      setError('')
+      const mission = await createMission({
+        site,
+        client: client || undefined,
+        vehicleId,
+        driverId,
+        startDate,
+        endDate,
+        budget: Number(budget),
+      })
+      navigate(`/missions/${mission.id}`)
+    } catch (err) {
+      setError((err as Error).message)
+    }
   }
 
   return (
@@ -45,6 +53,12 @@ export function MissionWizard() {
       <div className="page-header" style={{ marginTop: 12 }}>
         <h1 className="page-title">Créer une mission</h1>
       </div>
+
+      {error && (
+        <div className="card" style={{ borderLeft: '4px solid var(--red)', padding: 12 }}>
+          <strong style={{ color: 'var(--red)' }}>Erreur :</strong> {error}
+        </div>
+      )}
 
       <div className="wizard-steps">
         {STEPS.map((s, i) => (

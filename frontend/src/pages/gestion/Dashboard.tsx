@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom'
-import { AlertCircle } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useFleetStore } from '@/store/fleetStore'
 import { KPICard, MissionBadge } from '@/components/ui'
+import { FleetChart } from '@/components/FleetChart'
 import { formatFCFA } from '@/utils/format'
 import { VEHICLE_STATUS_LABELS, VehicleStatus } from '@/types'
+import { AlertCircle, Wrench, Clock, Home } from 'lucide-react'
 
 export function Dashboard() {
   const user = useAuthStore((s) => s.user)
@@ -13,9 +14,9 @@ export function Dashboard() {
   const count = (status: VehicleStatus) => vehicles.filter((v) => v.status === status).length
   const disponibles = count('disponible')
   const enMission = count('en_mission')
-  const maintenance = count('maintenance') + count('panne')
-  const retoursAControler = missions.filter((m) => m.status === 'controle' || m.status === 'retour').length
-  const enginsAction = count('maintenance') + count('panne') + count('controle')
+  const maintenance = count('maintenance') + count('hors_service')
+  const retoursAControler = missions.filter((m) => m.status === 'controle').length
+  const enginsAction = count('maintenance') + count('hors_service') + count('controle')
   const contratsExpirant = vehicles.filter((v) => v.external).length
 
   const fuelCost = fuelEntries.reduce((s, f) => s + f.amount, 0)
@@ -26,15 +27,18 @@ export function Dashboard() {
   const today = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
   const activeMissions = missions.filter((m) => m.status !== 'cloturee').slice(0, 5)
 
-  const parcStatuses: VehicleStatus[] = ['disponible', 'affecte', 'en_mission', 'controle', 'maintenance', 'panne']
+  const parcStatuses: VehicleStatus[] = ['disponible', 'reserve', 'en_mission', 'controle', 'maintenance', 'hors_service']
 
   return (
     <div className="page">
-      <div className="page-header">
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h1 className="page-title">Bonjour, {user?.name}</h1>
           <p className="page-subtitle">Voici l'état de votre flotte aujourd'hui — {today}</p>
         </div>
+        <button className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: 8 }} onClick={() => window.location.reload()}>
+          <Home size={18} /> Accueil
+        </button>
       </div>
 
       <div className="kpi-grid">
@@ -47,27 +51,24 @@ export function Dashboard() {
       <div className="card section">
         <div className="card-title">Actions à traiter</div>
         <div className="stat-row">
-          <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <AlertCircle size={20} style={{ color: '#d32f2f', flexShrink: 0 }} />
-            <strong>{retoursAControler}</strong> retour(s) à contrôler
+          <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <AlertCircle size={20} color="var(--red)" /> <strong>{retoursAControler}</strong> retour(s) à contrôler
           </span>
           <Link to="/controles" className="link-btn">
             Traiter
           </Link>
         </div>
         <div className="stat-row">
-          <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <AlertCircle size={20} style={{ color: '#f57c00', flexShrink: 0 }} />
-            <strong>{enginsAction}</strong> engin(s) nécessitent une action
+          <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Wrench size={20} color="var(--orange)" /> <strong>{enginsAction}</strong> engin(s) nécessitent une action
           </span>
           <Link to="/flotte" className="link-btn">
             Voir
           </Link>
         </div>
         <div className="stat-row">
-          <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <AlertCircle size={20} style={{ color: '#0288d1', flexShrink: 0 }} />
-            <strong>{contratsExpirant}</strong> contrat(s) externe(s) arrivent à échéance
+          <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Clock size={20} color="var(--yellow)" /> <strong>{contratsExpirant}</strong> contrat(s) externe(s) arrivent à échéance
           </span>
           <Link to="/flotte" className="link-btn">
             Voir
@@ -75,9 +76,14 @@ export function Dashboard() {
         </div>
       </div>
 
+      <div className="card section">
+        <div className="card-title">État du parc (Graphique)</div>
+        <FleetChart data={parcStatuses.map(s => ({ status: VEHICLE_STATUS_LABELS[s], count: count(s) }))} />
+      </div>
+
       <div className="grid-2 section">
         <div className="card">
-          <div className="card-title">État du parc</div>
+          <div className="card-title">État du parc (Détail)</div>
           {parcStatuses.map((s) => (
             <div className="stat-row" key={s}>
               <span>{VEHICLE_STATUS_LABELS[s]}</span>
