@@ -7,8 +7,11 @@ import com.smartfleet.smartfleet.entity.MissionStatus;
 import com.smartfleet.smartfleet.entity.Vehicle;
 import com.smartfleet.smartfleet.entity.VehicleStatus;
 import com.smartfleet.smartfleet.repository.AuditEventRepository;
+import com.smartfleet.smartfleet.repository.DriverRepository;
 import com.smartfleet.smartfleet.repository.MissionRepository;
+import com.smartfleet.smartfleet.repository.UserRepository;
 import com.smartfleet.smartfleet.repository.VehicleRepository;
+import com.smartfleet.smartfleet.security.SecurityUtil;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/alerts")
@@ -26,6 +30,9 @@ public class AlertController {
     private final AuditEventRepository auditEventRepository;
     private final MissionRepository missionRepository;
     private final VehicleRepository vehicleRepository;
+    private final SecurityUtil securityUtil;
+    private final UserRepository userRepository;
+    private final DriverRepository driverRepository;
 
     @Data
     public static class Alert {
@@ -49,6 +56,97 @@ public class AlertController {
     @GetMapping
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<Alert>> getAlerts() {
+        return ResponseEntity.ok(buildAllAlerts());
+    }
+
+    @GetMapping("/me")
+    @PreAuthorize("hasRole('CONDUCTEUR')")
+    public ResponseEntity<List<Alert>> getMyAlerts() {
+        String userId = securityUtil.getCurrentUserId();
+
+        // Récupérer le conducteur actuellement connecté
+        Optional<com.smartfleet.smartfleet.entity.User> user = userRepository.findById(userId);
+        if (user.isEmpty()) {
+            return ResponseEntity.ok(new ArrayList<>());
+        }
+
+        com.smartfleet.smartfleet.entity.User currentUser = user.get();
+        Optional<com.smartfleet.smartfleet.entity.Driver> driver = driverRepository.findAll().stream()
+            .filter(d -> d.getEmail().equals(currentUser.getEmail()))
+            .findFirst();
+
+        if (driver.isEmpty()) {
+            return ResponseEntity.ok(new ArrayList<>());
+        }
+
+        String driverId = driver.get().getId();
+        List<Alert> alerts = new ArrayList<>();
+
+        // 🔴 Urgent: Ses missions en attente validation > 2 heures
+        List<Mission> myPendingMissions = missionRepository.findByStatus(MissionStatus.CONTROLE).stream()
+            .filter(m -> m.getDriverId().equals(driverId))
+            .toList();
+        for (Mission mission : myPendingMissions) {
+            if (mission.getUpdatedAt() != null) {
+                long hoursDiff = java.time.temporal.ChronoUnit.HOURS
+                    .between(mission.getUpdatedAt(), LocalDateTime.now());
+                if (hoursDiff > 2) {
+                    alerts.add(new Alert(
+                        mission.getId(),
+                        "urgent",
+                        "Votre mission en attente de validation",
+                        "Mission " + mission.getCode() + " en attente depuis " + hoursDiff + "h",
+                        mission.getUpdatedAt(),
+                        false
+                    ));
+                }
+            }
+        }
+
+        // 🟠 Attention: Son véhicule assigné a un problème
+        List<Mission> myActiveMissions = missionRepository.findByStatus(MissionStatus.EN_COURS).stream()
+            .filter(m -> m.getDriverId().equals(driverId))
+            .toList();
+        for (Mission mission : myActiveMissions) {
+            Optional<Vehicle> assignedVehicle = vehicleRepository.findById(mission.getVehicleId());
+            if (assignedVehicle.isPresent()) {
+                Vehicle vehicle = assignedVehicle.get();
+                if (vehicle.getFuelLevel() < 25) {
+                    alerts.add(new Alert(
+                        vehicle.getId(),
+                        "attention",
+                        "Carburant faible sur votre engin",
+                        vehicle.getCode() + " a seulement " + vehicle.getFuelLevel() + "% de carburant",
+                        vehicle.getUpdatedAt(),
+                        false
+                    ));
+                }
+            }
+        }
+
+        // 🔵 Info: Ses missions clôturées
+        List<Mission> myClosedMissions = missionRepository.findByStatus(MissionStatus.CLOTUREE).stream()
+            .filter(m -> m.getDriverId().equals(driverId))
+            .toList();
+        for (Mission mission : myClosedMissions) {
+            alerts.add(new Alert(
+                mission.getId(),
+                "info",
+                "Votre mission est complétée",
+                "Mission " + mission.getCode() + " terminée avec succès",
+                mission.getUpdatedAt(),
+                false
+            ));
+        }
+
+        // Sort by severity
+        return ResponseEntity.ok(alerts.stream()
+            .sorted((a, b) -> getSeverityLevel(b.severity) - getSeverityLevel(a.severity))
+            .limit(10)
+            .toList());
+    }
+
+    private List<Alert> buildAllAlerts() {
         List<Alert> alerts = new ArrayList<>();
 
         // 🔴 Urgent: Missions en attente de validation (> 2 heures)
@@ -112,10 +210,10 @@ public class AlertController {
         }
 
         // Sort by severity: urgent > attention > info
-        return ResponseEntity.ok(alerts.stream()
+        return alerts.stream()
             .sorted((a, b) -> getSeverityLevel(b.severity) - getSeverityLevel(a.severity))
             .limit(20) // Limiter à 20 alertes
-            .toList());
+            .toList();
     }
 
     @PostMapping("/{id}/read")
