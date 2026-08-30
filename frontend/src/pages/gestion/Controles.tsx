@@ -4,6 +4,7 @@ import { useMissionWorkflow } from '@/hooks/useMissionWorkflow'
 import { EmptyState, MissionBadge, Modal } from '@/components/ui'
 import { formatNumber } from '@/utils/format'
 import { Mission } from '@/types'
+import { Check, AlertTriangle } from 'lucide-react'
 
 export function Controles() {
   const { vehicles, drivers } = useFleetStore()
@@ -92,14 +93,14 @@ export function Controles() {
                   <div className="card-title">Checklist retour</div>
                   <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
                     {Object.entries(arr.checklist).map(([k, ok]) => (
-                      <span key={k} className="strong" style={{ color: ok ? 'var(--green)' : 'var(--orange)' }}>
-                        {ok ? '✓' : '⚠'} {checklistLabels[k]}
+                      <span key={k} className="strong" style={{ color: ok ? 'var(--green)' : 'var(--orange)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        {ok ? <Check size={14} /> : <AlertTriangle size={14} />} {checklistLabels[k]}
                       </span>
                     ))}
                   </div>
                   {arr.anomaly && (
-                    <p style={{ marginTop: 10 }}>
-                      ⚠ <strong>Anomalie :</strong> {arr.anomaly}
+                    <p style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <AlertTriangle size={14} color="var(--orange)" /> <strong>Anomalie :</strong> {arr.anomaly}
                     </p>
                   )}
                 </div>

@@ -10,15 +10,20 @@ export function Flotte() {
   const [vehicles, setVehicles] = useState<Vehicle[]>(mockVehicles)
 
   useEffect(() => {
-    const loadVehicles = async () => {
-      try {
-        const data = await apiIntegrator.getVehicles()
-        if (data.length > 0) setVehicles(data)
-      } catch (err) {
-        setVehicles(mockVehicles)
-      }
+    setVehicles(mockVehicles)
+  }, [mockVehicles])
+
+  useEffect(() => {
+    let cancelled = false
+    apiIntegrator
+      .getVehicles()
+      .then((data) => {
+        if (!cancelled && data.length > 0) setVehicles(data)
+      })
+      .catch(() => undefined)
+    return () => {
+      cancelled = true
     }
-    loadVehicles()
   }, [])
   const navigate = useNavigate()
   const [search, setSearch] = useState('')

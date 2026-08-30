@@ -7,6 +7,7 @@ const API_URL = typeof window !== 'undefined' && window.location.hostname !== 'l
 interface ApiState {
   token: string | null
   setToken: (token: string | null) => void
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   fetch: (endpoint: string, options?: RequestInit) => Promise<any>
 }
 

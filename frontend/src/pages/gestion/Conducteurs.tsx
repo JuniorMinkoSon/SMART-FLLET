@@ -1,33 +1,28 @@
-import { FormEvent, useEffect, useState } from 'react'
+import { FormEvent, useCallback, useEffect, useState } from 'react'
 import { useApiStore } from '@/store/apiStore'
+import { useFleetStore } from '@/store/fleetStore'
 import { Drawer, DriverBadge } from '@/components/ui'
-
-interface Driver {
-  id: number
-  name: string
-  matricule: string
-  phone: string
-  status: string
-}
+import type { Driver } from '@/types'
 
 export function Conducteurs() {
   const { fetch } = useApiStore()
-  const [drivers, setDrivers] = useState<Driver[]>([])
+  const storeDrivers = useFleetStore((s) => s.drivers)
+  const [drivers, setDrivers] = useState<Driver[]>(storeDrivers)
   const [addOpen, setAddOpen] = useState(false)
   const [form, setForm] = useState({ name: '', matricule: '', phone: '' })
 
-  useEffect(() => {
-    loadDrivers()
-  }, [])
-
-  const loadDrivers = async () => {
+  const loadDrivers = useCallback(async () => {
     try {
       const data = await fetch('/drivers')
       setDrivers(data)
-    } catch (err) {
-      console.error('Erreur:', err)
+    } catch {
+      setDrivers(useFleetStore.getState().drivers)
     }
-  }
+  }, [fetch])
+
+  useEffect(() => {
+    loadDrivers()
+  }, [loadDrivers])
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()

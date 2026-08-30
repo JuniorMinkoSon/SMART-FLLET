@@ -22,17 +22,19 @@ export function Register() {
 
   // Validations temps-réel
   useEffect(() => {
-    const newErrors = { ...errors }
-    if (touched.name) {
-      newErrors.name = !name ? 'Nom requis' : name.length < 2 ? 'Au moins 2 caractères' : ''
-    }
-    if (touched.email) {
-      newErrors.email = !email ? 'Email requis' : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? 'Email invalide' : ''
-    }
-    if (touched.password) {
-      newErrors.password = !password ? 'Mot de passe requis' : password.length < 6 ? 'Au moins 6 caractères' : ''
-    }
-    setErrors(newErrors)
+    setErrors((prev) => {
+      const newErrors = { ...prev }
+      if (touched.name) {
+        newErrors.name = !name ? 'Nom requis' : name.length < 2 ? 'Au moins 2 caractères' : ''
+      }
+      if (touched.email) {
+        newErrors.email = !email ? 'Email requis' : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? 'Email invalide' : ''
+      }
+      if (touched.password) {
+        newErrors.password = !password ? 'Mot de passe requis' : password.length < 6 ? 'Au moins 6 caractères' : ''
+      }
+      return newErrors
+    })
   }, [name, email, password, touched])
 
   const isValid = name && email && password && !errors.name && !errors.email && !errors.password && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && password.length >= 6

@@ -2,6 +2,7 @@ import { Link, useParams } from 'react-router-dom'
 import { useFleetStore } from '@/store/fleetStore'
 import { MissionBadge } from '@/components/ui'
 import { formatFCFA, formatNumber } from '@/utils/format'
+import { AlertTriangle, CheckCircle2, Circle, CircleDot } from 'lucide-react'
 
 const FLOW_STEPS = [
   'Mission créée',
@@ -127,7 +128,9 @@ export function MissionDetail() {
           {arr?.anomaly && (
             <div className="card section">
               <div className="card-title">Anomalie signalée au retour</div>
-              <p>⚠ {arr.anomaly}</p>
+              <p style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <AlertTriangle size={14} color="var(--orange)" /> {arr.anomaly}
+              </p>
             </div>
           )}
         </div>
@@ -138,8 +141,8 @@ export function MissionDetail() {
             <ul className="timeline">
               {FLOW_STEPS.map((s, i) => (
                 <li key={s} className={i < done ? 'done' : i === done ? 'current' : ''}>
-                  <div className={i < done ? 'strong' : 'muted'}>
-                    {i < done ? '✓ ' : i === done ? '● ' : '○ '}
+                  <div className={i < done ? 'strong' : 'muted'} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    {i < done ? <CheckCircle2 size={14} color="var(--green)" /> : i === done ? <CircleDot size={14} /> : <Circle size={14} />}
                     {s}
                   </div>
                 </li>

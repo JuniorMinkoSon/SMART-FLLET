@@ -5,6 +5,7 @@ import { useDriverData } from './useDriverData'
 import { useMissionWorkflow } from '@/hooks/useMissionWorkflow'
 import { formatNumber } from '@/utils/format'
 import { ChecklistState } from '@/types'
+import { CheckCircle2 } from 'lucide-react'
 
 const CHECK_ITEMS: { key: keyof ChecklistState; label: string }[] = [
   { key: 'pneus', label: 'Pneus' },
@@ -72,7 +73,7 @@ export function CounterForm({ mode }: { mode: 'depart' | 'retour' }) {
     return (
       <DriverLayout title="Retour enregistré">
         <div className="card" style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 40 }}>✓</div>
+          <div><CheckCircle2 size={40} color="var(--green)" /></div>
           <h2 style={{ margin: '10px 0' }}>Données enregistrées</h2>
           <div className="divider" />
           <div className="stat-row">

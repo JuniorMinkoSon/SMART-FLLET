@@ -1,15 +1,16 @@
 import { ReactNode, useState } from 'react'
+import type { LucideIcon } from 'lucide-react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 import { useFleetStore } from '@/store/fleetStore'
 import { Drawer } from '@/components/ui'
-import { Home, Wrench, ListChecks, RotateCw, Users, Fuel, DollarSign, Bell, Settings, User, AlertCircle, AlertTriangle, Info } from 'lucide-react'
+import { Home, Wrench, ListChecks, RotateCw, Users, Fuel, DollarSign, Bell, Settings, User, AlertCircle, AlertTriangle, Info, FileText } from 'lucide-react'
 import { SmartFleetLogo } from '@/components/SmartFleetLogo'
 
 interface NavItem {
   to: string
   label: string
-  Icon: any
+  Icon: LucideIcon
 }
 
 interface NavGroup {
@@ -37,7 +38,10 @@ const GESTIONNAIRE_NAV: NavGroup[] = [
   },
   {
     title: 'Pilotage',
-    items: [{ to: '/alertes', label: 'Alertes', Icon: Bell }],
+    items: [
+      { to: '/alertes', label: 'Alertes', Icon: Bell },
+      { to: '/rapports', label: 'Rapports', Icon: FileText },
+    ],
   },
 ]
 

@@ -15,6 +15,7 @@ import { Conducteurs } from '@/pages/gestion/Conducteurs'
 import { Carburant } from '@/pages/gestion/Carburant'
 import { Depenses } from '@/pages/gestion/Depenses'
 import { Alertes } from '@/pages/gestion/Alertes'
+import { Rapports } from '@/pages/gestion/Rapports'
 import { Utilisateurs } from '@/pages/gestion/Utilisateurs'
 import { Parametres } from '@/pages/gestion/Parametres'
 import { DriverHome } from '@/pages/conducteur/DriverHome'
@@ -65,6 +66,7 @@ export function App() {
         <Route path="/carburant" element={<Managed title="Carburant"><Carburant /></Managed>} />
         <Route path="/depenses" element={<Managed title="Dépenses"><Depenses /></Managed>} />
         <Route path="/alertes" element={<Managed title="Alertes"><Alertes /></Managed>} />
+        <Route path="/rapports" element={<Managed title="Rapports"><Rapports /></Managed>} />
         <Route
           path="/utilisateurs"
           element={

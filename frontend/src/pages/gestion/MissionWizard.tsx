@@ -4,6 +4,7 @@ import { useFleetStore } from '@/store/fleetStore'
 import { useMissionWorkflow } from '@/hooks/useMissionWorkflow'
 import { StatusBadge } from '@/components/ui'
 import { formatFCFA } from '@/utils/format'
+import { Check } from 'lucide-react'
 
 const STEPS = ['Mission', 'Engin', 'Opérateur', 'Validation']
 
@@ -64,7 +65,7 @@ export function MissionWizard() {
         {STEPS.map((s, i) => (
           <div key={s} style={{ display: 'contents' }}>
             <div className={`wizard-step ${i === step ? 'active' : i < step ? 'done' : ''}`}>
-              <span className="num">{i < step ? '✓' : `0${i + 1}`}</span>
+              <span className="num">{i < step ? <Check size={12} /> : `0${i + 1}`}</span>
               {s}
             </div>
             {i < STEPS.length - 1 && <div className="wizard-sep" />}
@@ -168,7 +169,7 @@ export function MissionWizard() {
                   <span className="small strong" style={{ color: compatible ? 'var(--green)' : 'var(--text-3)' }}>
                     {compatible
                       ? available
-                        ? `${selectedVehicle?.type} ✓`
+                        ? `${selectedVehicle?.type} — compatible`
                         : 'Indisponible'
                       : `${d.skills[0]} uniquement`}
                   </span>

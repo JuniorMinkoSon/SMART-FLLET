@@ -13,8 +13,8 @@ interface ApiConfig {
 
 class ApiIntegrator {
   private config: ApiConfig = {
-    useBackend: (import.meta as any).env?.VITE_USE_BACKEND === 'true',
-    backendUrl: (import.meta as any).env?.VITE_API_URL || 'http://localhost:9090',
+    useBackend: import.meta.env?.VITE_USE_BACKEND === 'true',
+    backendUrl: import.meta.env?.VITE_API_URL || 'http://localhost:9090',
   }
 
   private normalizeStatusToFrontend(status: string): string {
@@ -47,7 +47,7 @@ class ApiIntegrator {
   async getVehicles(): Promise<Vehicle[]> {
     try {
       if (this.config.useBackend) {
-        const vehicles = await this.get<any[]>('/vehicles')
+        const vehicles = await this.get<Vehicle[]>('/vehicles')
         return vehicles.map(v => ({ ...v, status: this.normalizeStatusToFrontend(v.status) } as Vehicle))
       }
     } catch (err) {
@@ -59,7 +59,7 @@ class ApiIntegrator {
   async getDrivers(): Promise<Driver[]> {
     try {
       if (this.config.useBackend) {
-        const drivers = await this.get<any[]>('/drivers')
+        const drivers = await this.get<Driver[]>('/drivers')
         return drivers.map(d => ({ ...d, status: this.normalizeStatusToFrontend(d.status) } as Driver))
       }
     } catch (err) {
@@ -71,7 +71,7 @@ class ApiIntegrator {
   async getMissions(): Promise<Mission[]> {
     try {
       if (this.config.useBackend) {
-        const missions = await this.get<any[]>('/missions')
+        const missions = await this.get<Mission[]>('/missions')
         return missions.map(m => ({ ...m, status: this.normalizeStatusToFrontend(m.status) } as Mission))
       }
     } catch (err) {

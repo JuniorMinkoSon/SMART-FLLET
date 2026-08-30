@@ -1,9 +1,9 @@
 import { useFleetStore } from '@/store/fleetStore'
 import { AlertSeverity } from '@/types'
-import { AlertCircle, AlertTriangle, Info, Bell } from 'lucide-react'
+import { AlertCircle, AlertTriangle, Info, Bell, type LucideIcon } from 'lucide-react'
 
 const SEV_ORDER: AlertSeverity[] = ['urgent', 'attention', 'info']
-const SEV_META: Record<AlertSeverity, { Icon: any; label: string }> = {
+const SEV_META: Record<AlertSeverity, { Icon: LucideIcon; label: string }> = {
   urgent: { Icon: AlertCircle, label: 'URGENT' },
   attention: { Icon: AlertTriangle, label: 'ATTENTION' },
   info: { Icon: Info, label: 'INFO' },
