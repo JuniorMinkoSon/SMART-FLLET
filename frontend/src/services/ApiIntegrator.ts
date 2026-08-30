@@ -13,7 +13,7 @@ interface ApiConfig {
 
 class ApiIntegrator {
   private config: ApiConfig = {
-    useBackend: import.meta.env?.VITE_USE_BACKEND === 'true',
+    useBackend: import.meta.env?.VITE_USE_BACKEND !== 'false',
     backendUrl: import.meta.env?.VITE_API_URL || 'http://localhost:9090',
   }
 
@@ -25,10 +25,18 @@ class ApiIntegrator {
     this.config = { ...this.config, ...config }
   }
 
+  private authHeaders(): Record<string, string> {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+    return {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    }
+  }
+
   private async get<T>(path: string): Promise<T> {
     const response = await fetch(`${this.config.backendUrl}/api${path}`, {
       method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.authHeaders(),
     })
     if (!response.ok) throw new Error(`API ${path}: ${response.status}`)
     return response.json() as Promise<T>
@@ -37,7 +45,7 @@ class ApiIntegrator {
   private async post<T>(path: string, body: unknown): Promise<T> {
     const response = await fetch(`${this.config.backendUrl}/api${path}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.authHeaders(),
       body: JSON.stringify(body),
     })
     if (!response.ok) throw new Error(`API ${path}: ${response.status}`)

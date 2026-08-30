@@ -57,23 +57,34 @@ export function Login() {
     setLoading(true)
     setError('')
     try {
-      const user = await fetch('/login', {
+      const response = await fetch('/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email: email.trim(), password }),
       })
-      if (user && user.token) {
+      if (response && response.token) {
+        const role = String(response.role).toLowerCase() as 'admin' | 'gestionnaire' | 'conducteur'
         setSuccess(true)
-        setToken(String(user.token))
-        setUser(user)
+        setToken(String(response.token))
+        setUser({ id: String(response.id), name: response.name, email: response.email, role })
         setTimeout(() => {
-          navigate(user.role === 'conducteur' ? '/conducteur' : '/dashboard')
+          navigate(role === 'conducteur' ? '/conducteur' : '/dashboard')
         }, 500)
       } else {
         setError('Identifiants incorrects')
       }
     } catch (err) {
-      setError('Erreur de connexion')
-      console.error(err)
+      const mock = USERS.find((u) => u.email === email.trim() && u.password === password)
+      const message = err instanceof Error ? err.message : ''
+      if (mock && (message === 'API error' || message === 'Failed to fetch' || err instanceof TypeError)) {
+        const role = mock.role as 'admin' | 'gestionnaire' | 'conducteur'
+        setSuccess(true)
+        setUser({ id: String(mock.id), name: mock.email.split('@')[0], email: mock.email, role })
+        setTimeout(() => {
+          navigate(role === 'conducteur' ? '/conducteur' : '/dashboard')
+        }, 500)
+      } else {
+        setError(message && message !== 'Failed to fetch' ? message : 'Erreur de connexion')
+      }
     } finally {
       setLoading(false)
     }

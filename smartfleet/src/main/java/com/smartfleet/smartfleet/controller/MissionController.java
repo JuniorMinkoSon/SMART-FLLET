@@ -6,6 +6,8 @@ import com.smartfleet.smartfleet.entity.FuelEntry;
 import com.smartfleet.smartfleet.service.MissionService;
 import com.smartfleet.smartfleet.service.FuelEntryService;
 import com.smartfleet.smartfleet.security.SecurityUtil;
+import com.smartfleet.smartfleet.repository.UserRepository;
+import com.smartfleet.smartfleet.exception.BusinessException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -21,6 +23,14 @@ public class MissionController {
     private final MissionService missionService;
     private final FuelEntryService fuelEntryService;
     private final SecurityUtil securityUtil;
+    private final UserRepository userRepository;
+
+    private String currentDriverId() {
+        String userId = securityUtil.getCurrentUserId();
+        return userRepository.findById(userId)
+            .map(u -> u.getDriver() != null ? u.getDriver().getId() : null)
+            .orElseThrow(() -> new BusinessException("DRIVER_NOT_FOUND", "Aucun conducteur associé à ce compte", 403));
+    }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'GESTIONNAIRE')")
@@ -49,7 +59,7 @@ public class MissionController {
     @GetMapping("/me")
     @PreAuthorize("hasRole('CONDUCTEUR')")
     public ResponseEntity<List<MissionResponse>> getMyMissions() {
-        String driverId = securityUtil.getCurrentUserId();
+        String driverId = currentDriverId();
         List<Mission> missions = missionService.getMissionsByDriver(driverId);
         return ResponseEntity.ok(missions.stream().map(this::mapToResponse).toList());
     }
@@ -113,7 +123,7 @@ public class MissionController {
     public ResponseEntity<FuelEntryResponse> recordFuel(
         @PathVariable String id,
         @Valid @RequestBody CreateFuelEntryRequest request) {
-        String driverId = securityUtil.getCurrentUserId();
+        String driverId = currentDriverId();
         String actorId = securityUtil.getCurrentUserId();
         var fuelEntry = fuelEntryService.recordFuel(
             id,

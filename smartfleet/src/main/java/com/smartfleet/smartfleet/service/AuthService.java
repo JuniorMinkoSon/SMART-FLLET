@@ -4,6 +4,7 @@ import com.smartfleet.smartfleet.dto.AuthResponse;
 import com.smartfleet.smartfleet.entity.User;
 import com.smartfleet.smartfleet.exception.BusinessException;
 import com.smartfleet.smartfleet.repository.UserRepository;
+import com.smartfleet.smartfleet.security.TokenStore;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ import java.util.UUID;
 public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final TokenStore tokenStore;
 
     public AuthResponse login(String email, String password) {
         User user = userRepository.findByEmail(email)
@@ -29,7 +31,8 @@ public class AuthService {
             throw new BusinessException("INVALID_PASSWORD", "Mot de passe incorrect", 401);
         }
 
-        String token = "Bearer " + UUID.randomUUID().toString();
+        String token = UUID.randomUUID().toString();
+        tokenStore.register(token, user);
 
         return new AuthResponse(
             user.getId(),

@@ -29,7 +29,7 @@ public class AuditEvent {
 
     private String missionId;
 
-    @Column(columnDefinition = "jsonb")
+    @Column(length = 4000)
     private String details;
 
     @Column(name = "created_at", nullable = false, updatable = false)

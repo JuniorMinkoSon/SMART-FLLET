@@ -11,6 +11,8 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import com.smartfleet.smartfleet.security.TokenAuthFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -20,6 +22,12 @@ import java.util.Arrays;
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
+    private final TokenAuthFilter tokenAuthFilter;
+
+    public SecurityConfig(TokenAuthFilter tokenAuthFilter) {
+        this.tokenAuthFilter = tokenAuthFilter;
+    }
+
     @Value("${app.cors.allowed-origins:http://localhost:5173}")
     private String allowedOrigins;
 
@@ -64,7 +72,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/missions/*/fuel").hasRole("CONDUCTEUR")
                 .anyRequest().authenticated()
             )
-            .httpBasic(basic -> {});
+            .httpBasic(basic -> {})
+            .addFilterBefore(tokenAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

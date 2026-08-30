@@ -1,8 +1,10 @@
 import { create } from 'zustand'
 
-const API_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-  ? `http://${window.location.hostname}:3000/api`
-  : 'http://localhost:3000/api'
+const API_URL = import.meta.env?.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL}/api`
+  : typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+    ? `http://${window.location.hostname}:9090/api`
+    : 'http://localhost:9090/api'
 
 interface ApiState {
   token: string | null
@@ -37,8 +39,8 @@ export const useApiStore = create<ApiState>((set, get) => ({
     })
 
     if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.error || 'API error')
+      const error = await response.json().catch(() => ({}))
+      throw new Error(error.message || error.error || 'API error')
     }
 
     return response.json()
