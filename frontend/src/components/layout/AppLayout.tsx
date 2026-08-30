@@ -1,5 +1,6 @@
 import { ReactNode, useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
+import { Home, Boxes, CheckSquare, ArrowRightLeft, Users, Zap, DollarSign, Bell, Settings, User, AlertCircle } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useFleetStore } from '@/store/fleetStore'
 import { Drawer } from '@/components/ui'
@@ -7,7 +8,7 @@ import { Drawer } from '@/components/ui'
 interface NavItem {
   to: string
   label: string
-  icon: string
+  icon: React.ReactNode
 }
 
 interface NavGroup {
@@ -16,43 +17,43 @@ interface NavGroup {
 }
 
 const GESTIONNAIRE_NAV: NavGroup[] = [
-  { items: [{ to: '/dashboard', label: 'Accueil', icon: '🏠' }] },
+  { items: [{ to: '/dashboard', label: 'Accueil', icon: <Home size={20} /> }] },
   {
     title: 'Exploitation',
     items: [
-      { to: '/flotte', label: 'Flotte', icon: '🚜' },
-      { to: '/missions', label: 'Missions', icon: '📋' },
-      { to: '/controles', label: 'Départs & retours', icon: '🔁' },
+      { to: '/flotte', label: 'Flotte', icon: <Boxes size={20} /> },
+      { to: '/missions', label: 'Missions', icon: <CheckSquare size={20} /> },
+      { to: '/controles', label: 'Départs & retours', icon: <ArrowRightLeft size={20} /> },
     ],
   },
   {
     title: 'Ressources',
     items: [
-      { to: '/conducteurs', label: 'Conducteurs', icon: '👷' },
-      { to: '/carburant', label: 'Carburant', icon: '⛽' },
-      { to: '/depenses', label: 'Dépenses', icon: '💰' },
+      { to: '/conducteurs', label: 'Conducteurs', icon: <Users size={20} /> },
+      { to: '/carburant', label: 'Carburant', icon: <Zap size={20} /> },
+      { to: '/depenses', label: 'Dépenses', icon: <DollarSign size={20} /> },
     ],
   },
   {
     title: 'Pilotage',
-    items: [{ to: '/alertes', label: 'Alertes', icon: '🔔' }],
+    items: [{ to: '/alertes', label: 'Alertes', icon: <Bell size={20} /> }],
   },
 ]
 
 const ADMIN_EXTRA: NavGroup = {
   title: 'Administration',
   items: [
-    { to: '/utilisateurs', label: 'Utilisateurs', icon: '👥' },
-    { to: '/parametres', label: 'Paramètres', icon: '⚙️' },
+    { to: '/utilisateurs', label: 'Utilisateurs', icon: <Users size={20} /> },
+    { to: '/parametres', label: 'Paramètres', icon: <Settings size={20} /> },
   ],
 }
 
 const MOBILE_NAV: NavItem[] = [
-  { to: '/dashboard', label: 'Accueil', icon: '🏠' },
-  { to: '/flotte', label: 'Flotte', icon: '🚜' },
-  { to: '/missions', label: 'Missions', icon: '📋' },
-  { to: '/alertes', label: 'Alertes', icon: '🔔' },
-  { to: '/parametres', label: 'Profil', icon: '👤' },
+  { to: '/dashboard', label: 'Accueil', icon: <Home size={20} /> },
+  { to: '/flotte', label: 'Flotte', icon: <Boxes size={20} /> },
+  { to: '/missions', label: 'Missions', icon: <CheckSquare size={20} /> },
+  { to: '/alertes', label: 'Alertes', icon: <Bell size={20} /> },
+  { to: '/parametres', label: 'Profil', icon: <User size={20} /> },
 ]
 
 export function AppLayout({ children, title }: { children: ReactNode; title: string }) {
@@ -66,8 +67,9 @@ export function AppLayout({ children, title }: { children: ReactNode; title: str
   const groups =
     user?.role === 'admin' ? [...GESTIONNAIRE_NAV, ADMIN_EXTRA] : GESTIONNAIRE_NAV
 
-  const sevIcon = { urgent: '🔴', attention: '🟠', info: '🟡' }
+  const sevIcon = { urgent: AlertCircle, attention: AlertCircle, info: AlertCircle }
   const sevLabel = { urgent: 'URGENT', attention: 'ATTENTION', info: 'INFO' }
+  const sevColor = { urgent: '#d32f2f', attention: '#f57c00', info: '#0288d1' }
 
   return (
     <div className="app-shell">
@@ -104,7 +106,7 @@ export function AppLayout({ children, title }: { children: ReactNode; title: str
               }}
               aria-label="Alertes"
             >
-              🔔
+              <Bell size={20} />
               {unread > 0 && <span className="bell-badge">{unread}</span>}
             </button>
             <div className="user-chip">
@@ -138,20 +140,23 @@ export function AppLayout({ children, title }: { children: ReactNode; title: str
         ))}
       </nav>
 
-      <Drawer open={alertsOpen} title={`🔔 Alertes (${alerts.length})`} onClose={() => setAlertsOpen(false)}>
-        {alerts.map((a) => (
-          <div className="alert-item" key={a.id}>
-            <div className="alert-sev">{sevIcon[a.severity]}</div>
-            <div style={{ flex: 1 }}>
-              <div className="small strong muted">{sevLabel[a.severity]}</div>
-              <div className="strong">{a.title}</div>
-              <div className="muted small">{a.detail}</div>
-              <div className="small" style={{ color: 'var(--text-3)', marginTop: 4 }}>
-                {a.time}
+      <Drawer open={alertsOpen} title={`Alertes (${alerts.length})`} onClose={() => setAlertsOpen(false)}>
+        {alerts.map((a) => {
+          const IconComponent = sevIcon[a.severity]
+          return (
+            <div className="alert-item" key={a.id}>
+              <IconComponent size={20} style={{ color: sevColor[a.severity], flexShrink: 0 }} />
+              <div style={{ flex: 1 }}>
+                <div className="small strong muted">{sevLabel[a.severity]}</div>
+                <div className="strong">{a.title}</div>
+                <div className="muted small">{a.detail}</div>
+                <div className="small" style={{ color: 'var(--text-3)', marginTop: 4 }}>
+                  {a.time}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </Drawer>
     </div>
   )

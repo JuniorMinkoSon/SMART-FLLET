@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Fleet - Architecture Complète</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; background: #f5f5f5; margin: 0; padding: 20px; }
+    .container { max-width: 1200px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    h1 { color: #1f5eff; border-bottom: 3px solid #1f5eff; padding-bottom: 10px; }
+    h2 { color: #1f5eff; margin-top: 40px; }
+    h3 { color: #333; }
+    code { background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-family: 'Courier New', monospace; }
+    pre { background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 5px; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+    th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+    th { background: #f0f0f0; font-weight: bold; }
+    .endpoint { background: #f9f9f9; padding: 15px; border-left: 4px solid #1f5eff; margin: 15px 0; }
+    .success { color: #16a34a; }
+    .error { color: #dc2626; }
+    .flow { background: #f0f7ff; padding: 20px; border-radius: 5px; margin: 20px 0; }
+    .diagram { background: #f5f5f5; padding: 15px; border-radius: 5px; font-family: monospace; font-size: 12px; overflow-x: auto; }
+    ul { margin: 10px 0; }
+    li { margin: 5px 0; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+<h1>🚛 SMART FLEET - Documentation Complète</h1>
+
+<h2>📋 Vue d'ensemble</h2>
+<p>SmartFleet est un système complet de gestion de flotte avec 3 rôles distincts, authentification sécurisée, et traçabilité complète.</p>
+
+<h2>🔐 Authentification & Sécurité OWASP-10</h2>
+
+<h3>Flux Login</h3>
+<div class="flow">
+<strong>1. Frontend envoie credentials</strong><br>
+POST /api/login<br>
+{ "email": "admin@smartfleet.com", "password": "admin123" }
+<br><br>
+<strong>2. Backend valide</strong><br>
+✓ Vérifier format email<br>
+✓ Vérifier password length (6+ chars)<br>
+✓ Rate limiting: max 5 tentatives/15min<br>
+✓ Query: SELECT FROM users WHERE email=? AND password=?
+<br><br>
+<strong>3. Response</strong><br>
+✓ {id, email, name, role, token}<br>
+✗ "Identifiants incorrects" (401 - pas de fuite info)
+</div>
+
+<h3>Tokens & RBAC</h3>
+<div class="endpoint">
+<strong>Token Format:</strong> Simple integer (user_id)<br>
+<strong>Validation:</strong> À chaque requête protégée<br>
+<strong>Header:</strong> Authorization: Bearer {userId}<br>
+<strong>Check:</strong> SELECT FROM users WHERE id=? AND is_active=1
+</div>
+
+<h2>📡 Endpoints API</h2>
+
+<h3>Authentication</h3>
+<div class="endpoint">
+<strong>POST /api/login</strong><br>
+Identifie utilisateur et retourne token<br>
+Rate limit: 5 tentatives/15min
+</div>
+
+<div class="endpoint">
+<strong>POST /api/register</strong><br>
+Crée nouveau compte<br>
+Validation: email unique, password 6+ chars, role enum
+</div>
+
+<h3>Vehicles</h3>
+<div class="endpoint">
+<strong>GET /api/vehicles</strong> (All authenticated roles)<br>
+<span class="success">Response:</span> [id, code, type, name, plate, status, km, engine_hours, fuel_level]
+</div>
+
+<div class="endpoint">
+<strong>POST /api/vehicles</strong> (Admin, Gestionnaire)<br>
+<span class="error">403 si Conducteur</span><br>
+Crée véhicule + logs audit
+</div>
+
+<h3>Missions</h3>
+<div class="endpoint">
+<strong>GET /api/missions</strong> (All roles)<br>
+Retourne missions avec statuts: planifiee → en_cours → retour → cloturee
+</div>
+
+<div class="endpoint">
+<strong>POST /api/missions</strong> (Admin, Gestionnaire)<br>
+Crée mission + assign vehicle & driver + change statuses
+</div>
+
+<div class="endpoint">
+<strong>POST /api/missions/:id/departure</strong> (Conducteur only)<br>
+Record: km, engine_hours, fuel_level<br>
+Backend: UPDATE mission status='en_cours', UPDATE vehicle km
+</div>
+
+<div class="endpoint">
+<strong>POST /api/missions/:id/arrival</strong> (Conducteur only)<br>
+Record: km, engine_hours, fuel_level<br>
+Backend: UPDATE mission status='retour', CREATE alert
+</div>
+
+<div class="endpoint">
+<strong>POST /api/missions/:id/validate</strong> (Admin, Gestionnaire)<br>
+Clôture mission: status='cloturee', free vehicle & driver
+</div>
+
+<h3>Alerts & Audit</h3>
+<div class="endpoint">
+<strong>GET /api/alerts</strong> (All roles)<br>
+Retourne alertes non lues
+</div>
+
+<div class="endpoint">
+<strong>GET /api/audit</strong> (Admin only)<br>
+<span class="error">403 si pas admin</span><br>
+Retourne complete audit trail (500 derniers logs)
+</div>
+
+<h2>🔄 Flux Complet Exemple: Mission</h2>
+
+<div class="flow">
+<strong>JOUR 1 - Gestionnaire crée mission</strong>
+<pre>
+Frontend (email/pwd)
+  → POST /api/login
+  → Backend: Validate + Query users table
+  → Response: {token: 2, role: 'gestionnaire'}
+  ✓ Audit log: action='LOGIN'
+
+Frontend (form: site, client, vehicle_id, driver_id)
+  → POST /api/missions
+  → Backend:
+     ✓ Extract token: user_id = 2
+     ✓ RBAC check: 'gestionnaire' in ['admin', 'gestionnaire']? YES
+     ✓ Validate inputs (email format, ID integers, etc)
+     ✓ Check FK: SELECT FROM vehicles WHERE id=1 → Found
+     ✓ Check FK: SELECT FROM drivers WHERE id=2 → Found
+     ✓ INSERT INTO missions (code, site, client, vehicle_id, driver_id, created_by='2', status='planifiee')
+     ✓ UPDATE vehicles SET status='affecte' WHERE id=1
+     ✓ UPDATE drivers SET status='en_mission' WHERE id=2
+     ✓ INSERT INTO audit_logs (user_id=2, action='CREATE', table='missions', ...)
+  → Response: {id: 1, code: 'MS-1693127456000', status: 'planifiee'}
+  ✓ Audit log: action='CREATE'
+</pre>
+
+<strong>JOUR 2 - Conducteur enregistre départ</strong>
+<pre>
+Frontend (Conducteur login) → token: 3, role: 'conducteur'
+  ✓ Audit log: action='LOGIN'
+
+Frontend (Click "Départ", collect km/fuel)
+  → POST /api/missions/1/departure
+  → Backend:
+     ✓ Extract token: user_id = 3
+     ✓ RBAC: 'conducteur' in ['conducteur']? YES
+     ✓ UPDATE missions SET status='en_cours', departure_km=128450, departure_time=NOW() WHERE id=1
+     ✓ UPDATE vehicles SET km=128450, engine_hours=4820, fuel_level=82 WHERE id=1
+     ✓ INSERT audit_logs (user_id=3, action='UPDATE', table='missions', record_id=1)
+  → Response: {ok: true}
+  ✓ Audit log: action='UPDATE'
+</pre>
+
+<strong>JOUR 3 - Conducteur enregistre retour</strong>
+<pre>
+Frontend (Click "Arrivée", collect km/fuel)
+  → POST /api/missions/1/arrival
+  → Backend:
+     ✓ UPDATE missions SET status='retour', arrival_km=128650, arrival_time=NOW() WHERE id=1
+     ✓ UPDATE vehicles SET status='en_retour', km=128650, ... WHERE id=1
+     ✓ INSERT INTO alerts (mission_id=1, severity='warning', title='Retour - MS-1693...', detail='À vérifier')
+     ✓ INSERT audit_logs (user_id=3, action='UPDATE', ...)
+  → Response: {ok: true}
+  ✓ Alert créée pour Gestionnaire
+  ✓ Audit log: action='UPDATE'
+</pre>
+
+<strong>JOUR 4 - Gestionnaire valide mission</strong>
+<pre>
+Frontend (See alert) → GET /api/alerts
+  → Backend: SELECT FROM alerts WHERE read_at IS NULL
+
+Frontend (Click "Valider")
+  → POST /api/missions/1/validate
+  → Backend:
+     ✓ RBAC: 'gestionnaire' in ['admin', 'gestionnaire']? YES
+     ✓ UPDATE missions SET status='cloturee' WHERE id=1
+     ✓ UPDATE vehicles SET status='disponible' WHERE id=1
+     ✓ UPDATE drivers SET status='disponible' WHERE id=2
+     ✓ INSERT audit_logs (user_id=2, action='UPDATE', ...)
+  → Response: {ok: true}
+  ✓ Audit log: action='UPDATE'
+</pre>
+
+<strong>Admin review</strong>
+<pre>
+Frontend (Admin login) → token: 1, role: 'admin'
+
+Frontend (Click "Audit")
+  → GET /api/audit
+  → Backend:
+     ✓ RBAC: 'admin' in ['admin']? YES
+     ✓ SELECT FROM audit_logs ORDER BY created_at DESC LIMIT 500
+  → Response: [
+       {user_id: 2, action: 'CREATE', table: 'missions', record_id: 1, created_at: '2026-08-27T...'},
+       {user_id: 3, action: 'UPDATE', table: 'missions', record_id: 1, details: '{"departure_km":128450}', created_at: '2026-08-28T...'},
+       {user_id: 3, action: 'UPDATE', table: 'missions', record_id: 1, details: '{"arrival_km":128650}', created_at: '2026-08-30T...'},
+       {user_id: 2, action: 'UPDATE', table: 'missions', record_id: 1, details: '{"status":"cloturee"}', created_at: '2026-08-31T...'}
+     ]
+  ✓ Complete traceability!
+</pre>
+</div>
+
+<h2>💾 Base de Données</h2>
+
+<h3>Schema Tables</h3>
+<table>
+<tr><th>Table</th><th>Colonnes Clés</th><th>Contraintes</th></tr>
+<tr><td>users</td><td>id, email, password, name, role, is_active</td><td>PK, UNIQUE(email), CHECK(role IN ...)</td></tr>
+<tr><td>drivers</td><td>id, name, matricule, status</td><td>PK, UNIQUE(matricule)</td></tr>
+<tr><td>vehicles</td><td>id, code, plate, status, km, fuel_level, driver_id</td><td>PK, UNIQUE(code, plate), FK(driver_id)</td></tr>
+<tr><td>missions</td><td>id, code, vehicle_id, driver_id, created_by, status, departure_km, arrival_km</td><td>PK, UNIQUE(code), FK(vehicle_id, driver_id, created_by)</td></tr>
+<tr><td>audit_logs</td><td>id, user_id, action, table_name, record_id, details, ip_address</td><td>PK, FK(user_id)</td></tr>
+<tr><td>alerts</td><td>id, mission_id, severity, title, read_at</td><td>PK, FK(mission_id), CHECK(severity IN ...)</td></tr>
+</table>
+
+<h2>👥 Rôles & Permissions</h2>
+
+<table>
+<tr><th>Endpoint</th><th>Conducteur</th><th>Gestionnaire</th><th>Admin</th></tr>
+<tr><td>GET /api/vehicles</td><td>✅</td><td>✅</td><td>✅</td></tr>
+<tr><td>POST /api/vehicles</td><td>❌</td><td>✅</td><td>✅</td></tr>
+<tr><td>POST /api/missions</td><td>❌</td><td>✅</td><td>✅</td></tr>
+<tr><td>POST /api/missions/:id/departure</td><td>✅</td><td>❌</td><td>❌</td></tr>
+<tr><td>POST /api/missions/:id/arrival</td><td>✅</td><td>❌</td><td>❌</td></tr>
+<tr><td>POST /api/missions/:id/validate</td><td>❌</td><td>✅</td><td>✅</td></tr>
+<tr><td>GET /api/audit</td><td>❌</td><td>❌</td><td>✅</td></tr>
+</table>
+
+<h2>🔒 Sécurité OWASP-10</h2>
+
+<table>
+<tr><th>ID</th><th>Vulnérabilité</th><th>Protection</th></tr>
+<tr><td>A01</td><td>Broken Access Control</td><td>RBAC middleware + token validation</td></tr>
+<tr><td>A02</td><td>Cryptographic Failures</td><td>FK constraints + prepared queries</td></tr>
+<tr><td>A03</td><td>Injection</td><td>Input sanitization + parameterized queries</td></tr>
+<tr><td>A04</td><td>Insecure Design</td><td>Database constraints + validation</td></tr>
+<tr><td>A05</td><td>Security Misconfiguration</td><td>CORS whitelist + security headers</td></tr>
+<tr><td>A06</td><td>Vulnerable Components</td><td>Minimal dependencies</td></tr>
+<tr><td>A07</td><td>Authentication Failures</td><td>Rate limiting (5 attempts/15min)</td></tr>
+<tr><td>A08</td><td>Data Integrity</td><td>Audit trail + FK</td></tr>
+<tr><td>A09</td><td>Logging & Monitoring</td><td>Complete audit_logs</td></tr>
+<tr><td>A10</td><td>SSRF</td><td>Input validation + domain whitelist</td></tr>
+</table>
+
+<h2>📊 Statuts de Mission</h2>
+
+<div class="diagram">
+planifiee → en_cours → retour → cloturee
+   ↑                      ↓
+   └──────────────────────┘
+   (peut revenir à planifiée avant départ)
+
+Status Journey:
+- planifiee: Mission créée, pas encore démarrée
+- en_cours: Départ enregistré, mission en cours
+- retour: Arrivée enregistrée, en attente de validation
+- cloturee: Validée, mission terminée
+</div>
+
+<h2>📱 Frontend Components</h2>
+
+<table>
+<tr><th>Page</th><th>Rôle</th><th>Fonctionnalités</th></tr>
+<tr><td>Login.tsx</td><td>All</td><td>Authentification + comptes démo</td></tr>
+<tr><td>Register.tsx</td><td>All</td><td>Création compte + validations JS</td></tr>
+<tr><td>Dashboard.tsx</td><td>Gestionnaire</td><td>Vue synthèse missions</td></tr>
+<tr><td>Missions.tsx</td><td>Gestionnaire</td><td>CRUD missions</td></tr>
+<tr><td>Conducteur/*.tsx</td><td>Conducteur</td><td>Départ/Arrivée, profil</td></tr>
+</table>
+
+<h2>🚀 Prochaines Étapes</h2>
+
+<ul>
+<li>✅ Authentication & Login</li>
+<li>✅ RBAC & Permissions</li>
+<li>✅ Mission Management</li>
+<li>✅ Audit Logging</li>
+<li>✅ OWASP-10 Security</li>
+<li>⏳ JWT tokens avec expiry</li>
+<li>⏳ Password hashing (bcrypt)</li>
+<li>⏳ RH Dashboard (salaires)</li>
+<li>⏳ Geolocation tracking</li>
+<li>⏳ Real-time updates (WebSocket)</li>
+</ul>
+
+</div>
+</body>
+</html>

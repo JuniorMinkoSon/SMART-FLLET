@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { Login } from '@/pages/Login'
+import { Register } from '@/pages/Register'
 import { Dashboard } from '@/pages/gestion/Dashboard'
 import { Flotte } from '@/pages/gestion/Flotte'
 import { FicheEngin } from '@/pages/gestion/FicheEngin'
@@ -51,6 +52,7 @@ export function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
 
         <Route path="/dashboard" element={<Managed title="Dashboard"><Dashboard /></Managed>} />
         <Route path="/flotte" element={<Managed title="Flotte"><Flotte /></Managed>} />

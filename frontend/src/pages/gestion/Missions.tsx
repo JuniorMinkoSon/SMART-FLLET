@@ -1,13 +1,60 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useFleetStore } from '@/store/fleetStore'
+import { useApiStore } from '@/store/apiStore'
 import { MissionBadge } from '@/components/ui'
 
+interface Mission {
+  id: number
+  code: string
+  site: string
+  client: string
+  vehicle_id: number
+  driver_id: number
+  start_date: string
+  end_date: string
+  status: string
+}
+
+interface Vehicle {
+  id: number
+  code: string
+  type: string
+  plate: string
+}
+
+interface Driver {
+  id: number
+  name: string
+  matricule: string
+}
+
 export function Missions() {
-  const { missions, vehicles, drivers } = useFleetStore()
+  const { fetch } = useApiStore()
   const navigate = useNavigate()
+  const [missions, setMissions] = useState<Mission[]>([])
+  const [vehicles, setVehicles] = useState<Vehicle[]>([])
+  const [drivers, setDrivers] = useState<Driver[]>([])
   const [statusFilter, setStatusFilter] = useState('')
   const [search, setSearch] = useState('')
+
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  const loadData = async () => {
+    try {
+      const [m, v, d] = await Promise.all([
+        fetch('/missions'),
+        fetch('/vehicles'),
+        fetch('/drivers'),
+      ])
+      setMissions(m)
+      setVehicles(v)
+      setDrivers(d)
+    } catch (err) {
+      console.error('Erreur chargement:', err)
+    }
+  }
 
   const filtered = missions.filter((m) => {
     if (statusFilter && m.status !== statusFilter) return false
@@ -54,8 +101,8 @@ export function Missions() {
           </thead>
           <tbody>
             {filtered.map((m) => {
-              const v = vehicles.find((x) => x.id === m.vehicleId)
-              const d = drivers.find((x) => x.id === m.driverId)
+              const v = vehicles.find((x) => x.id === m.vehicle_id)
+              const d = drivers.find((x) => x.id === m.driver_id)
               return (
                 <tr key={m.id} className="clickable" onClick={() => navigate(`/missions/${m.id}`)}>
                   <td className="strong">{m.code}</td>
@@ -65,10 +112,10 @@ export function Missions() {
                   </td>
                   <td>{d?.name}</td>
                   <td>
-                    {m.startDate.slice(5)} → {m.endDate.slice(5)}
+                    {m.start_date?.slice(0, 10)} → {m.end_date?.slice(0, 10)}
                   </td>
                   <td>
-                    <MissionBadge status={m.status} />
+                    <MissionBadge status={m.status as any} />
                   </td>
                 </tr>
               )

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { AlertCircle } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useFleetStore } from '@/store/fleetStore'
 import { KPICard, MissionBadge } from '@/components/ui'
@@ -46,24 +47,27 @@ export function Dashboard() {
       <div className="card section">
         <div className="card-title">Actions à traiter</div>
         <div className="stat-row">
-          <span>
-            🔴 <strong>{retoursAControler}</strong> retour(s) à contrôler
+          <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <AlertCircle size={20} style={{ color: '#d32f2f', flexShrink: 0 }} />
+            <strong>{retoursAControler}</strong> retour(s) à contrôler
           </span>
           <Link to="/controles" className="link-btn">
             Traiter
           </Link>
         </div>
         <div className="stat-row">
-          <span>
-            🟠 <strong>{enginsAction}</strong> engin(s) nécessitent une action
+          <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <AlertCircle size={20} style={{ color: '#f57c00', flexShrink: 0 }} />
+            <strong>{enginsAction}</strong> engin(s) nécessitent une action
           </span>
           <Link to="/flotte" className="link-btn">
             Voir
           </Link>
         </div>
         <div className="stat-row">
-          <span>
-            🟡 <strong>{contratsExpirant}</strong> contrat(s) externe(s) arrivent à échéance
+          <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <AlertCircle size={20} style={{ color: '#0288d1', flexShrink: 0 }} />
+            <strong>{contratsExpirant}</strong> contrat(s) externe(s) arrivent à échéance
           </span>
           <Link to="/flotte" className="link-btn">
             Voir

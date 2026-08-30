@@ -57,11 +57,14 @@ input, select, textarea {
   background: var(--surface);
   color: var(--text);
   width: 100%;
+  transition: all 0.3s ease;
 }
 
 input:focus, select:focus, textarea:focus {
   outline: 2px solid rgba(31, 94, 255, 0.35);
   border-color: var(--brand);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(31, 94, 255, 0.15);
 }
 
 label {
@@ -72,6 +75,11 @@ label {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   margin-bottom: 6px;
+  transition: color 0.3s ease;
+}
+
+label span {
+  animation: pulse 1s infinite;
 }
 
 /* ---------- Layout ---------- */
@@ -298,21 +306,78 @@ label {
   font-weight: 600;
   border: 1px solid transparent;
   text-decoration: none;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
 }
 
-.btn-primary { background: var(--brand); color: #fff; }
-.btn-primary:hover { background: var(--brand-dark); }
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.btn:active::before {
+  width: 300px;
+  height: 300px;
+}
+
+.btn-primary {
+  background: var(--brand);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(31, 94, 255, 0.3);
+}
+.btn-primary:hover {
+  background: var(--brand-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(31, 94, 255, 0.4);
+}
 .btn-secondary {
   background: var(--surface);
   border-color: var(--border);
   color: var(--text);
 }
-.btn-secondary:hover { background: var(--bg); }
-.btn-danger { background: var(--red); color: #fff; }
-.btn-success { background: var(--green); color: #fff; }
+.btn-secondary:hover {
+  background: var(--bg);
+  transform: translateY(-2px);
+}
+.btn-danger {
+  background: var(--red);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+}
+.btn-success {
+  background: var(--green);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.3);
+}
 .btn-block { width: 100%; }
 .btn-lg { padding: 14px 20px; font-size: 16px; }
-.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.link {
+  color: var(--brand);
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  position: relative;
+  border-bottom: 2px solid transparent;
+}
+
+.link:hover {
+  border-bottom-color: var(--brand);
+}
 
 .link-btn {
   background: none;
@@ -320,6 +385,12 @@ label {
   color: var(--brand);
   font-weight: 600;
   padding: 0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.link-btn:hover {
+  color: var(--brand-dark);
 }
 
 /* ---------- Badges / statuts ---------- */
@@ -660,6 +731,71 @@ table.data-table {
 .driver-nav a.active { color: var(--brand); }
 .driver-nav .icon { display: block; font-size: 18px; margin-bottom: 2px; }
 
+/* ---------- Animations ---------- */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+@keyframes popIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes successPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(22, 163, 74, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0);
+  }
+}
+
 /* ---------- Login ---------- */
 .login-page {
   min-height: 100vh;
@@ -668,6 +804,7 @@ table.data-table {
   justify-content: center;
   background: linear-gradient(135deg, #0e1a33 0%, #1f3a70 100%);
   padding: 20px;
+  animation: fadeIn 0.6s ease-out;
 }
 
 .login-card {
@@ -677,13 +814,35 @@ table.data-table {
   width: 400px;
   max-width: 100%;
   box-shadow: var(--shadow-lg);
+  animation: slideInUp 0.5s ease-out;
+  transition: all 0.3s ease;
+}
+
+.login-card.login-success {
+  animation: successPulse 0.6s ease-out;
 }
 
 .login-logo {
   font-size: 22px;
   font-weight: 800;
   letter-spacing: 0.05em;
-  margin-bottom: 4px;
+  margin-bottom: 20px;
+  animation: slideInUp 0.6s ease-out 0.1s both;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.login-logo img {
+  animation: slideInUp 0.6s ease-out 0.1s both;
+  transition: transform 0.3s ease;
+  max-height: 120px;
+  width: auto;
+  object-fit: contain;
+}
+
+.login-logo img:hover {
+  transform: scale(1.02);
 }
 
 .login-logo span { color: var(--brand); }
@@ -694,6 +853,7 @@ table.data-table {
   border-top: 1px solid var(--border);
   font-size: 12px;
   color: var(--text-2);
+  animation: slideInUp 0.6s ease-out 0.3s both;
 }
 
 .demo-accounts button {
@@ -706,9 +866,35 @@ table.data-table {
   padding: 8px 12px;
   margin-top: 8px;
   font-size: 12px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  animation: slideInUp 0.6s ease-out both;
 }
 
-.error-text { color: var(--red); font-weight: 600; margin-top: 8px; }
+.demo-accounts button:hover {
+  background: var(--surface);
+  border-color: var(--brand);
+  transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(31, 94, 255, 0.15);
+}
+
+.demo-accounts button strong { color: var(--brand); }
+
+.error-text {
+  color: var(--red);
+  font-weight: 600;
+  margin-top: 8px;
+  animation: slideInUp 0.3s ease-out, shake 0.4s ease-out 0.1s;
+}
+
+.field {
+  animation: slideInUp 0.6s ease-out both;
+}
+
+.field:nth-child(1) { animation-delay: 0.1s; }
+.field:nth-child(2) { animation-delay: 0.2s; }
+.field:nth-child(3) { animation-delay: 0.3s; }
+.field:nth-child(4) { animation-delay: 0.4s; }
 
 /* ---------- Responsive ---------- */
 @media (max-width: 1024px) {
