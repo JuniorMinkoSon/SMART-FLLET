@@ -3,7 +3,6 @@ package com.smartfleet.smartfleet.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -29,15 +28,15 @@ public class Mission {
 
     @Column(name = "start_date", nullable = false)
     @NotNull
-    private LocalDate startDate;
+    private LocalDateTime startDate;
 
     @Column(name = "end_date", nullable = false)
     @NotNull
-    private LocalDate endDate;
+    private LocalDateTime endDate;
 
     @Column(nullable = false)
     @Positive
-    private Integer budget;
+    private Long budget;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "vehicle_id", nullable = false)
@@ -60,14 +59,14 @@ public class Mission {
     @Column(name = "departure_fuel")
     private Integer departureFuel;
 
-    @Column(name = "return_km")
-    private Integer returnKm;
+    @Column(name = "arrival_km")
+    private Integer arrivalKm;
 
-    @Column(name = "return_engine_hours")
-    private Integer returnEngineHours;
+    @Column(name = "arrival_engine_hours")
+    private Integer arrivalEngineHours;
 
-    @Column(name = "return_fuel")
-    private Integer returnFuel;
+    @Column(name = "arrival_fuel")
+    private Integer arrivalFuel;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

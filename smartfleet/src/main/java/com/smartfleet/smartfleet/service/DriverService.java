@@ -8,33 +8,48 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
-import java.util.Set;
+import java.util.Optional;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class DriverService {
     private final DriverRepository driverRepository;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public Driver createDriver(String name, String email, String phone, Set<String> skills) {
+    public Driver save(Driver driver) {
+        if (driverRepository.findByEmail(driver.getEmail()).isPresent()) {
+            throw new BusinessException("DRIVER_EMAIL_EXISTS", "Email déjà utilisé", 409);
+        }
+        return driverRepository.save(driver);
+    }
+
+    public Driver createDriver(String name, String email, String phone, List<String> skills) {
         if (driverRepository.findByEmail(email).isPresent()) {
             throw new BusinessException("DRIVER_EMAIL_EXISTS", "Email déjà utilisé", 409);
         }
 
-        Driver driver = Driver.builder()
-            .name(name)
-            .email(email)
-            .phone(phone)
-            .status(DriverStatus.DISPONIBLE)
-            .skills(skills != null ? skills : Set.of())
-            .build();
+        try {
+            String skillsJson = skills != null && !skills.isEmpty() ?
+                objectMapper.writeValueAsString(skills) : "[]";
 
-        return driverRepository.save(driver);
+            Driver driver = Driver.builder()
+                .name(name)
+                .email(email)
+                .phone(phone)
+                .status(DriverStatus.DISPONIBLE)
+                .skills(skillsJson)
+                .build();
+
+            return driverRepository.save(driver);
+        } catch (Exception e) {
+            throw new BusinessException("SKILLS_ERROR", "Erreur lors du traitement des compétences", 400);
+        }
     }
 
-    public Driver getDriverById(String id) {
-        return driverRepository.findById(id)
-            .orElseThrow(() -> new BusinessException("DRIVER_NOT_FOUND", "Conducteur non trouvé", 404));
+    public Optional<Driver> getDriverById(String id) {
+        return driverRepository.findById(id);
     }
 
     public List<Driver> getAllDrivers() {

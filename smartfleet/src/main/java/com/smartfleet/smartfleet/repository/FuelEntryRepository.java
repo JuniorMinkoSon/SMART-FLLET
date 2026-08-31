@@ -5,6 +5,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface FuelEntryRepository extends JpaRepository<FuelEntry, String> {
-    List<FuelEntry> findByMissionId(String missionId);
-    List<FuelEntry> findByDriverId(String driverId);
+    List<FuelEntry> findByMission_Id(String missionId);
 }

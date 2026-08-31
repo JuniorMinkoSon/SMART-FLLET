@@ -3,10 +3,13 @@ spring:
     name: smartfleet
 
   datasource:
-    url: jdbc:h2:mem:smartfleet
+    url: jdbc:h2:~/smartfleet;MODE=MySQL;AUTO_SERVER=TRUE
     username: sa
     password:
     driver-class-name: org.h2.Driver
+  h2:
+    console:
+      enabled: true
 
   jpa:
     hibernate:
@@ -34,7 +37,19 @@ spring:
       - org.springframework.ai.model.openai.autoconfigure.OpenAiModerationAutoConfiguration
       - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
       - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisConnectionFactoryAutoConfiguration
       - org.springframework.ai.vectorstore.redis.autoconfigure.RedisVectorStoreAutoConfiguration
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: false
+  health:
+    livenessState:
+      enabled: false
+    readinessState:
+      enabled: false
 
   security:
     filter:
@@ -54,9 +69,10 @@ logging:
 
 server:
   port: 9090
+  address: 0.0.0.0
   servlet:
     context-path: /
 
 app:
   cors:
-    allowed-origins: ${CORS_ORIGINS:http://localhost:5173}
+    allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:5174,http://localhost:5175}

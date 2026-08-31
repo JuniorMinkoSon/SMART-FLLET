@@ -32,21 +32,21 @@ public class VehicleController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'GESTIONNAIRE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTIONNAIRE', 'CONDUCTEUR')")
     public ResponseEntity<List<VehicleResponse>> getAllVehicles() {
         List<Vehicle> vehicles = vehicleService.getAllVehicles();
         return ResponseEntity.ok(vehicles.stream().map(this::mapToResponse).toList());
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'GESTIONNAIRE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTIONNAIRE', 'CONDUCTEUR')")
     public ResponseEntity<VehicleResponse> getVehicle(@PathVariable String id) {
         Vehicle vehicle = vehicleService.getVehicleById(id);
         return ResponseEntity.ok(mapToResponse(vehicle));
     }
 
     @GetMapping("/available")
-    @PreAuthorize("hasAnyRole('ADMIN', 'GESTIONNAIRE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTIONNAIRE', 'CONDUCTEUR')")
     public ResponseEntity<List<VehicleResponse>> getAvailableVehicles() {
         List<Vehicle> vehicles = vehicleService.getAvailableVehicles();
         return ResponseEntity.ok(vehicles.stream().map(this::mapToResponse).toList());

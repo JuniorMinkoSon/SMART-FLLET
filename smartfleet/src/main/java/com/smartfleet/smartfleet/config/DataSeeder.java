@@ -14,8 +14,6 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-import java.util.Set;
-
 @Component
 @RequiredArgsConstructor
 public class DataSeeder implements CommandLineRunner {
@@ -28,12 +26,14 @@ public class DataSeeder implements CommandLineRunner {
     public void run(String... args) {
         if (userRepository.count() > 0) return;
 
-        Driver driver = driverRepository.save(Driver.builder()
+        driverRepository.save(Driver.builder()
             .name("Moussa Koné")
             .email("conducteur@smartfleet.com")
             .phone("+2250701020304")
             .status(DriverStatus.DISPONIBLE)
-            .skills(Set.of("Camion", "Pelle"))
+            .skills("[\"Camion\", \"Pelle\"]")
+            .licenseType("C")
+            .vehicleCategories("[\"Camion\", \"Pelle\"]")
             .build());
 
         driverRepository.save(Driver.builder()
@@ -41,7 +41,9 @@ public class DataSeeder implements CommandLineRunner {
             .email("jean@smartfleet.com")
             .phone("+2250705060708")
             .status(DriverStatus.DISPONIBLE)
-            .skills(Set.of("Camion"))
+            .skills("[\"Camion\"]")
+            .licenseType("B")
+            .vehicleCategories("[\"Camion\"]")
             .build());
 
         userRepository.save(User.builder()
@@ -65,7 +67,6 @@ public class DataSeeder implements CommandLineRunner {
             .password(passwordEncoder.encode("conduct123"))
             .name("Moussa Koné")
             .role(UserRole.CONDUCTEUR)
-            .driver(driver)
             .enabled(true)
             .build());
 

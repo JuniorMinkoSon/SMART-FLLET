@@ -3,24 +3,19 @@ package com.smartfleet.smartfleet.dto;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
-import java.util.List;
 
 @Data
-public class CreateDriverRequest {
-    @NotBlank
-    private String name;
-
+public class CreateUserRequest {
     @Email
     @NotBlank
     private String email;
 
     @NotBlank
-    private String phone;
+    private String password;
 
     @NotBlank
-    private String licenseType;
+    private String name;
 
-    private List<String> vehicleCategories;
-
-    private List<String> skills;
+    @NotBlank
+    private String role;
 }

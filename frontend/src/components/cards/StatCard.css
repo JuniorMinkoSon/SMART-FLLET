@@ -1,0 +1,75 @@
+.stat-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  display: flex;
+  gap: 16px;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+}
+
+.stat-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: currentColor;
+}
+
+.stat-icon {
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+
+.stat-card.stat-blue .stat-icon {
+  color: var(--blue);
+}
+
+.stat-card.stat-green .stat-icon {
+  color: var(--green);
+}
+
+.stat-card.stat-orange .stat-icon {
+  color: var(--orange);
+}
+
+.stat-card.stat-red .stat-icon {
+  color: var(--red);
+}
+
+.stat-content {
+  flex: 1;
+}
+
+.stat-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-tertiary);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.stat-subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.stat-trend {
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 8px;
+}
+
+.stat-trend.positive {
+  color: var(--green);
+}
+
+.stat-trend.negative {
+  color: var(--red);
+}

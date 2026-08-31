@@ -20,10 +20,6 @@ public class FuelEntry {
     @JoinColumn(name = "mission_id", nullable = false)
     private Mission mission;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "driver_id", nullable = false)
-    private Driver driver;
-
     @Column(nullable = false)
     @Positive
     private Double quantity;

@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
 import java.time.LocalDateTime;
-import java.util.Set;
 
 @Entity
 @Table(name = "drivers")
@@ -34,10 +33,19 @@ public class Driver {
     @Column(nullable = false)
     private DriverStatus status = DriverStatus.DISPONIBLE;
 
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "driver_skills")
-    @Column(name = "skill")
-    private Set<String> skills;
+    @OneToOne
+    @JoinColumn(name = "user_id", unique = true)
+    private User user;
+
+    @Column(columnDefinition = "JSON")
+    private String skills;
+
+    @Column(nullable = false)
+    @NotBlank
+    private String licenseType;
+
+    @Column(columnDefinition = "JSON")
+    private String vehicleCategories;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

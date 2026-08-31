@@ -1,19 +1,19 @@
-import { ReactNode } from 'react'
+import { ReactNode, useEffect } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
-import { AppLayout } from '@/components/layout/AppLayout'
+import { ProfessionalLayout } from '@/components/layout/ProfessionalLayout'
 import { Login } from '@/pages/Login'
 import { Register } from '@/pages/Register'
-import { Dashboard } from '@/pages/gestion/Dashboard'
+import { DashboardProfessional } from '@/pages/gestion/DashboardProfessional'
 import { Flotte } from '@/pages/gestion/Flotte'
 import { FicheEngin } from '@/pages/gestion/FicheEngin'
-import { Missions } from '@/pages/gestion/Missions'
+import { MissionsProfessional } from '@/pages/gestion/MissionsProfessional'
 import { MissionWizard } from '@/pages/gestion/MissionWizard'
 import { MissionDetail } from '@/pages/gestion/MissionDetail'
 import { Controles } from '@/pages/gestion/Controles'
 import { Conducteurs } from '@/pages/gestion/Conducteurs'
 import { Carburant } from '@/pages/gestion/Carburant'
-import { Depenses } from '@/pages/gestion/Depenses'
+import { DepensesProfessional } from '@/pages/gestion/DepensesProfessional'
 import { Alertes } from '@/pages/gestion/Alertes'
 import { Rapports } from '@/pages/gestion/Rapports'
 import { Utilisateurs } from '@/pages/gestion/Utilisateurs'
@@ -37,7 +37,7 @@ function RequireRole({ roles, children }: { roles: UserRole[]; children: ReactNo
 function Managed({ title, children }: { title: string; children: ReactNode }) {
   return (
     <RequireRole roles={['admin', 'gestionnaire']}>
-      <AppLayout title={title}>{children}</AppLayout>
+      <ProfessionalLayout title={title}>{children}</ProfessionalLayout>
     </RequireRole>
   )
 }
@@ -48,6 +48,20 @@ function DriverOnly({ children }: { children: ReactNode }) {
 
 export function App() {
   const user = useAuthStore((s) => s.user)
+  const { setUser } = useAuthStore()
+
+  useEffect(() => {
+    const restoreAuth = async () => {
+      const token = localStorage.getItem('token')
+      const storedUser = localStorage.getItem('user')
+
+      if (token && storedUser) {
+        setUser(JSON.parse(storedUser))
+      }
+    }
+
+    restoreAuth()
+  }, [setUser])
 
   return (
     <BrowserRouter>
@@ -55,25 +69,25 @@ export function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        <Route path="/dashboard" element={<Managed title="Dashboard"><Dashboard /></Managed>} />
+        <Route path="/dashboard" element={<Managed title="Dashboard"><DashboardProfessional /></Managed>} />
         <Route path="/flotte" element={<Managed title="Flotte"><Flotte /></Managed>} />
         <Route path="/flotte/:id" element={<Managed title="Fiche engin"><FicheEngin /></Managed>} />
-        <Route path="/missions" element={<Managed title="Missions"><Missions /></Managed>} />
+        <Route path="/missions" element={<Managed title="Missions"><MissionsProfessional /></Managed>} />
         <Route path="/missions/nouvelle" element={<Managed title="Créer une mission"><MissionWizard /></Managed>} />
         <Route path="/missions/:id" element={<Managed title="Mission"><MissionDetail /></Managed>} />
         <Route path="/controles" element={<Managed title="Départs & retours"><Controles /></Managed>} />
         <Route path="/conducteurs" element={<Managed title="Conducteurs"><Conducteurs /></Managed>} />
         <Route path="/carburant" element={<Managed title="Carburant"><Carburant /></Managed>} />
-        <Route path="/depenses" element={<Managed title="Dépenses"><Depenses /></Managed>} />
+        <Route path="/depenses" element={<Managed title="Dépenses"><DepensesProfessional /></Managed>} />
         <Route path="/alertes" element={<Managed title="Alertes"><Alertes /></Managed>} />
         <Route path="/rapports" element={<Managed title="Rapports"><Rapports /></Managed>} />
         <Route
           path="/utilisateurs"
           element={
             <RequireRole roles={['admin']}>
-              <AppLayout title="Utilisateurs">
+              <ProfessionalLayout title="Utilisateurs">
                 <Utilisateurs />
-              </AppLayout>
+              </ProfessionalLayout>
             </RequireRole>
           }
         />

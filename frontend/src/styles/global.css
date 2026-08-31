@@ -1,3 +1,6 @@
+/* Import Professional Theme CSS */
+@import url('./professional.css');
+
 :root {
   --brand: #1f5eff;
   --brand-dark: #1747c2;

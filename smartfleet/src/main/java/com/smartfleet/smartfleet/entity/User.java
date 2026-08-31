@@ -27,12 +27,11 @@ public class User {
     @Column(nullable = false)
     private UserRole role;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "driver_id")
-    private Driver driver;
-
     @Column(nullable = false)
     private Boolean enabled = true;
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+    private Driver driver;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

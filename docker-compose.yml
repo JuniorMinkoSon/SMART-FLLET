@@ -1,68 +1,44 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database
-  postgres:
-    image: postgres:15-alpine
-    container_name: smartfleet-db
-    environment:
-      POSTGRES_DB: smartfleet
-      POSTGRES_USER: smartfleet
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-smartfleet_secure_password_change_in_production}
-    ports:
-      - "${DB_PORT:-5432}:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - smartfleet-net
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U smartfleet"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # Spring Boot Backend
+  # Spring Boot Backend (H2 in-memory database)
   backend:
     build:
       context: ./smartfleet
       dockerfile: Dockerfile
     container_name: smartfleet-backend
     environment:
-      SPRING_DATASOURCE_URL: ${DB_URL:-jdbc:postgresql://postgres:5432/smartfleet}
-      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME:-smartfleet}
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-smartfleet_secure_password_change_in_production}
-      JWT_SECRET: ${JWT_SECRET:-your_jwt_secret_key_change_in_production}
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATASOURCE_URL: jdbc:h2:mem:smartfleet
+      SPRING_DATASOURCE_USERNAME: sa
+      SPRING_DATASOURCE_PASSWORD: ""
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.h2.Driver
+      JWT_SECRET: ${JWT_SECRET:-smartfleet_secret_key_demo_2026}
     ports:
       - "${BACKEND_PORT:-8080}:8080"
-    depends_on:
-      postgres:
-        condition: service_healthy
     networks:
       - smartfleet-net
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
       retries: 3
 
-  # React Frontend (optional for dev)
-  # frontend:
-  #   build:
-  #     context: ./frontend
-  #     dockerfile: Dockerfile
-  #   container_name: smartfleet-frontend
-  #   ports:
-  #     - "${FRONTEND_PORT:-5173}:5173"
-  #   environment:
-  #     VITE_API_URL: http://backend:8080
-  #     VITE_USE_BACKEND: "true"
-  #   depends_on:
-  #     - backend
-  #   networks:
-  #     - smartfleet-net
-
-volumes:
-  postgres_data:
+  # React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: smartfleet-frontend
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    environment:
+      VITE_API_URL: http://localhost:8080
+      VITE_USE_BACKEND: "true"
+    depends_on:
+      - backend
+    networks:
+      - smartfleet-net
 
 networks:
   smartfleet-net:
