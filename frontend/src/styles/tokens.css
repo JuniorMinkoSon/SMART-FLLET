@@ -1,0 +1,68 @@
+/* =============================================================================
+   Smart Fleet — Design tokens (source de vérité unique)
+   Chargé avant global.css / professional.css. Aucune autre feuille ne doit
+   redéfinir :root — uniquement consommer ces variables.
+   ============================================================================= */
+
+:root {
+  /* ---- Couleur de marque / primaire -------------------------------------- */
+  --blue: #2563eb;
+  --blue-dark: #1d4ed8;
+  --blue-light: #eff4ff;
+  /* Alias historiques (global.css, login) — même valeur que --blue */
+  --brand: var(--blue);
+  --brand-dark: var(--blue-dark);
+  --primary: var(--blue);
+
+  /* ---- Surfaces --------------------------------------------------------- */
+  --bg: #f4f6fa;
+  --bg-primary: #ffffff;
+  --bg-secondary: #f6f8fc;
+  --bg-tertiary: #eef1f6;
+  --surface: var(--bg-primary);
+  --border: #e3e8f0;
+  --border-strong: #cdd5e3;
+
+  /* ---- Texte ---------------------------------------------------------------- */
+  --text-primary: #1a1d29;
+  --text-secondary: #5b6b85;
+  --text-tertiary: #8d99b0;
+  /* Alias historiques (global.css) */
+  --text: var(--text-primary);
+  --text-2: var(--text-secondary);
+  --text-3: var(--text-tertiary);
+
+  /* ---- Sémantique : succès / avertissement / erreur / info ------------- */
+  --green: #16a34a;
+  --green-light: #dcfce7;
+  --green-dark: #15803d;
+
+  --orange: #ea580c;
+  --orange-light: #ffedd5;
+  --orange-dark: #c2410c;
+
+  --yellow: #ca8a04;
+  --yellow-light: #fef9c3;
+
+  --red: #dc2626;
+  --red-light: #fee2e2;
+  --red-dark: #b91c1c;
+
+  /* ---- Rayons ------------------------------------------------------------ */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+  --radius: var(--radius-lg);
+
+  /* ---- Ombres ---------------------------------------------------------------- */
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
+  --shadow-md: 0 4px 12px rgba(16, 24, 40, 0.08);
+  --shadow-lg: 0 16px 40px rgba(16, 24, 40, 0.16);
+  --shadow: var(--shadow-sm);
+
+  /* ---- Divers ---------------------------------------------------------------- */
+  --sidebar-width: 260px;
+  --topbar-height: 64px;
+  --focus-ring: 0 0 0 3px rgba(37, 99, 235, 0.35);
+}
