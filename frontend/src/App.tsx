@@ -4,16 +4,16 @@ import { useAuthStore } from '@/store/authStore'
 import { ProfessionalLayout } from '@/components/layout/ProfessionalLayout'
 import { Login } from '@/pages/Login'
 import { Register } from '@/pages/Register'
-import { DashboardProfessional } from '@/pages/gestion/DashboardProfessional'
+import { Dashboard } from '@/pages/gestion/Dashboard'
 import { Flotte } from '@/pages/gestion/Flotte'
 import { FicheEngin } from '@/pages/gestion/FicheEngin'
-import { MissionsProfessional } from '@/pages/gestion/MissionsProfessional'
+import { Missions } from '@/pages/gestion/Missions'
 import { MissionWizard } from '@/pages/gestion/MissionWizard'
 import { MissionDetail } from '@/pages/gestion/MissionDetail'
 import { Controles } from '@/pages/gestion/Controles'
 import { Conducteurs } from '@/pages/gestion/Conducteurs'
 import { Carburant } from '@/pages/gestion/Carburant'
-import { DepensesProfessional } from '@/pages/gestion/DepensesProfessional'
+import { Depenses } from '@/pages/gestion/Depenses'
 import { Alertes } from '@/pages/gestion/Alertes'
 import { Rapports } from '@/pages/gestion/Rapports'
 import { Utilisateurs } from '@/pages/gestion/Utilisateurs'
@@ -69,16 +69,16 @@ export function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        <Route path="/dashboard" element={<Managed title="Dashboard"><DashboardProfessional /></Managed>} />
+        <Route path="/dashboard" element={<Managed title="Dashboard"><Dashboard /></Managed>} />
         <Route path="/flotte" element={<Managed title="Flotte"><Flotte /></Managed>} />
         <Route path="/flotte/:id" element={<Managed title="Fiche engin"><FicheEngin /></Managed>} />
-        <Route path="/missions" element={<Managed title="Missions"><MissionsProfessional /></Managed>} />
+        <Route path="/missions" element={<Managed title="Missions"><Missions /></Managed>} />
         <Route path="/missions/nouvelle" element={<Managed title="Créer une mission"><MissionWizard /></Managed>} />
         <Route path="/missions/:id" element={<Managed title="Mission"><MissionDetail /></Managed>} />
         <Route path="/controles" element={<Managed title="Départs & retours"><Controles /></Managed>} />
         <Route path="/conducteurs" element={<Managed title="Conducteurs"><Conducteurs /></Managed>} />
         <Route path="/carburant" element={<Managed title="Carburant"><Carburant /></Managed>} />
-        <Route path="/depenses" element={<Managed title="Dépenses"><DepensesProfessional /></Managed>} />
+        <Route path="/depenses" element={<Managed title="Dépenses"><Depenses /></Managed>} />
         <Route path="/alertes" element={<Managed title="Alertes"><Alertes /></Managed>} />
         <Route path="/rapports" element={<Managed title="Rapports"><Rapports /></Managed>} />
         <Route
