@@ -5,7 +5,7 @@ import { KPICard, MissionBadge } from '@/components/ui'
 import { FleetChart } from '@/components/FleetChart'
 import { formatFCFA } from '@/utils/format'
 import { VEHICLE_STATUS_LABELS, VehicleStatus } from '@/types'
-import { AlertCircle, Wrench, Clock, Home } from 'lucide-react'
+import { AlertCircle, Wrench, Clock } from 'lucide-react'
 
 export function Dashboard() {
   const user = useAuthStore((s) => s.user)
@@ -31,14 +31,14 @@ export function Dashboard() {
 
   return (
     <div className="page">
-      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="page-header">
         <div>
           <h1 className="page-title">Bonjour, {user?.name}</h1>
-          <p className="page-subtitle">Voici l'état de votre flotte aujourd'hui — {today}</p>
+          <p className="page-subtitle">
+            {user?.role === 'admin' ? 'Vue administrateur' : 'Vue gestionnaire'} · état de la flotte
+            au {today}
+          </p>
         </div>
-        <button className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: 8 }} onClick={() => window.location.reload()}>
-          <Home size={18} /> Accueil
-        </button>
       </div>
 
       <div className="kpi-grid">

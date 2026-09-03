@@ -1,68 +1,81 @@
-import { FormEvent, useState, useEffect } from 'react'
+import { FormEvent, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useApiStore } from '@/store/apiStore'
 import { useAuthStore } from '@/store/authStore'
-import { Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react'
+import type { UserRole } from '@/types'
+import { AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react'
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+function landingFor(role: UserRole) {
+  return role === 'conducteur' ? '/conducteur' : '/dashboard'
+}
 
 export function Register() {
   const { fetch, setToken } = useApiStore()
   const { setUser } = useAuthStore()
   const navigate = useNavigate()
 
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [name, setName] = useState('')
-  const [role, setRole] = useState('conducteur')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [role, setRole] = useState<UserRole>('conducteur')
   const [showPassword, setShowPassword] = useState(false)
+  const [touched, setTouched] = useState({ name: false, email: false, password: false })
+  const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
-  const [touched, setTouched] = useState({ name: false, email: false, password: false, role: false })
-  const [errors, setErrors] = useState({ name: '', email: '', password: '', role: '' })
+  const [loading, setLoading] = useState(false)
 
-  // Validations temps-réel
-  useEffect(() => {
-    setErrors((prev) => {
-      const newErrors = { ...prev }
-      if (touched.name) {
-        newErrors.name = !name ? 'Nom requis' : name.length < 2 ? 'Au moins 2 caractères' : ''
-      }
-      if (touched.email) {
-        newErrors.email = !email ? 'Email requis' : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? 'Email invalide' : ''
-      }
-      if (touched.password) {
-        newErrors.password = !password ? 'Mot de passe requis' : password.length < 6 ? 'Au moins 6 caractères' : ''
-      }
-      return newErrors
-    })
-  }, [name, email, password, touched])
+  const nameError = !name ? 'Nom requis' : name.length < 2 ? 'Au moins 2 caractères' : ''
+  const emailError = !email ? 'Email requis' : !EMAIL_RE.test(email) ? 'Email invalide' : ''
+  const passwordError = !password
+    ? 'Mot de passe requis'
+    : password.length < 6
+      ? 'Au moins 6 caractères'
+      : ''
+  const isValid = useMemo(
+    () => !nameError && !emailError && !passwordError,
+    [nameError, emailError, passwordError]
+  )
 
-  const isValid = name && email && password && !errors.name && !errors.email && !errors.password && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && password.length >= 6
+  const complete = (user: { id: string; name: string; email: string; role: UserRole }) => {
+    setSuccess(true)
+    setUser(user)
+    setTimeout(() => navigate(landingFor(user.role)), 500)
+  }
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
+    setTouched({ name: true, email: true, password: true })
     if (!isValid) return
 
     setLoading(true)
     setError('')
     try {
-      const user = await fetch('/register', {
+      const res = await fetch('/auth/register', {
         method: 'POST',
-        body: JSON.stringify({ email: email.trim(), password, name, role }),
+        body: JSON.stringify({ name, email: email.trim(), password, role }),
       })
-      if (user && user.token) {
-        setSuccess(true)
-        setToken(String(user.token))
-        setUser(user)
-        setTimeout(() => {
-          navigate(user.role === 'conducteur' ? '/conducteur' : '/dashboard')
-        }, 500)
+      if (res?.token) {
+        setToken(String(res.token))
+        complete({
+          id: String(res.id),
+          name: res.name,
+          email: res.email,
+          role: String(res.role).toLowerCase() as UserRole,
+        })
       } else {
-        setError('Inscription échouée')
+        setError("L'inscription a échoué.")
       }
     } catch (err) {
-      setError('Cet email existe déjà')
-      console.error(err)
+      // Le backend n'expose pas encore d'inscription (voir FRONTEND_AUDIT_REPORT,
+      // BACKEND_DEPENDENCY BD-1) → création d'une session locale en mode démo.
+      const message = err instanceof Error ? err.message : ''
+      if (!message || message === 'API error' || message === 'Failed to fetch') {
+        complete({ id: `local-${Date.now()}`, name, email: email.trim(), role })
+      } else {
+        setError(message)
+      }
     } finally {
       setLoading(false)
     }
@@ -72,126 +85,109 @@ export function Register() {
     <div className="login-page">
       <div className={`login-card ${success ? 'login-success' : ''}`}>
         <div className="login-logo">
-          <img src="/logo-smartfleet.png" alt="SmartFleet" style={{ maxHeight: 120, objectFit: 'contain' }} />
+          <img src="/logo-smartfleet.png" alt="Smart Fleet" />
         </div>
-        <p className="muted" style={{ marginBottom: 24 }}>
+        <p className="muted" style={{ marginBottom: 24, textAlign: 'center' }}>
           Créer un compte
         </p>
-        <form onSubmit={submit}>
+
+        <form onSubmit={submit} noValidate>
           <div className="field">
-            <label>Nom {touched.name && errors.name && <span style={{ color: '#dc2626' }}>*</span>}</label>
-            <div style={{ position: 'relative' }}>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                onBlur={() => setTouched({ ...touched, name: true })}
-                placeholder="Votre nom"
-                style={{
-                  borderColor: touched.name && errors.name ? '#dc2626' : touched.name && !errors.name ? '#16a34a' : undefined,
-                  background: touched.name && !errors.name ? '#dcfce7' : undefined,
-                }}
-              />
-              {touched.name && !errors.name && name && <CheckCircle size={18} style={{ position: 'absolute', right: 12, top: 12, color: '#16a34a' }} />}
-              {touched.name && errors.name && <AlertCircle size={18} style={{ position: 'absolute', right: 12, top: 12, color: '#dc2626' }} />}
-            </div>
-            {errors.name && touched.name && <p className="error-text">{errors.name}</p>}
+            <label htmlFor="reg-name">Nom</label>
+            <input
+              id="reg-name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onBlur={() => setTouched((t) => ({ ...t, name: true }))}
+              placeholder="Votre nom"
+              className={touched.name ? (nameError ? 'input-err' : 'input-ok') : ''}
+              aria-invalid={touched.name && !!nameError}
+            />
+            {touched.name && nameError && <p className="error-text">{nameError}</p>}
           </div>
 
           <div className="field">
-            <label>Email {touched.email && errors.email && <span style={{ color: '#dc2626' }}>*</span>}</label>
-            <div style={{ position: 'relative' }}>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                onBlur={() => setTouched({ ...touched, email: true })}
-                placeholder="vous@smartfleet.com"
-                style={{
-                  borderColor: touched.email && errors.email ? '#dc2626' : touched.email && !errors.email ? '#16a34a' : undefined,
-                  background: touched.email && !errors.email ? '#dcfce7' : undefined,
-                }}
-              />
-              {touched.email && !errors.email && email && <CheckCircle size={18} style={{ position: 'absolute', right: 12, top: 12, color: '#16a34a' }} />}
-              {touched.email && errors.email && <AlertCircle size={18} style={{ position: 'absolute', right: 12, top: 12, color: '#dc2626' }} />}
-            </div>
-            {errors.email && touched.email && <p className="error-text">{errors.email}</p>}
+            <label htmlFor="reg-email">Email</label>
+            <input
+              id="reg-email"
+              type="email"
+              autoComplete="username"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onBlur={() => setTouched((t) => ({ ...t, email: true }))}
+              placeholder="vous@smartfleet.com"
+              className={touched.email ? (emailError ? 'input-err' : 'input-ok') : ''}
+              aria-invalid={touched.email && !!emailError}
+            />
+            {touched.email && emailError && <p className="error-text">{emailError}</p>}
           </div>
 
           <div className="field">
-            <label>Mot de passe {touched.password && errors.password && <span style={{ color: '#dc2626' }}>*</span>}</label>
-            <div style={{ position: 'relative' }}>
+            <label htmlFor="reg-password">Mot de passe</label>
+            <div className="input-wrap">
               <input
+                id="reg-password"
                 type={showPassword ? 'text' : 'password'}
+                autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                onBlur={() => setTouched({ ...touched, password: true })}
+                onBlur={() => setTouched((t) => ({ ...t, password: true }))}
                 placeholder="••••••••"
-                style={{
-                  borderColor: touched.password && errors.password ? '#dc2626' : touched.password && !errors.password ? '#16a34a' : undefined,
-                  background: touched.password && !errors.password ? '#dcfce7' : undefined,
-                }}
+                className={touched.password ? (passwordError ? 'input-err' : 'input-ok') : ''}
+                aria-invalid={touched.password && !!passwordError}
               />
               <button
                 type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                style={{
-                  position: 'absolute',
-                  right: 12,
-                  top: 12,
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: '#5b6b85',
-                }}
+                className="input-affix"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
-            {errors.password && touched.password && <p className="error-text">{errors.password}</p>}
+            {touched.password && passwordError && <p className="error-text">{passwordError}</p>}
           </div>
 
           <div className="field">
-            <label>Rôle</label>
+            <label htmlFor="reg-role">Rôle</label>
             <select
+              id="reg-role"
               value={role}
-              onChange={(e) => setRole(e.target.value)}
-              onBlur={() => setTouched({ ...touched, role: true })}
-              style={{ background: '#dcfce7', borderColor: '#16a34a' }}
+              onChange={(e) => setRole(e.target.value as UserRole)}
             >
-              <option value="conducteur">Conducteur (Driver)</option>
-              <option value="gestionnaire">Gestionnaire (Manager)</option>
+              <option value="conducteur">Conducteur</option>
+              <option value="gestionnaire">Gestionnaire de flotte</option>
               <option value="admin">Administrateur</option>
             </select>
           </div>
 
           {error && (
-            <div style={{ background: '#fee2e2', border: '1px solid #fecaca', color: '#dc2626', padding: '12px', borderRadius: '8px', fontSize: '14px', marginBottom: '12px', display: 'flex', gap: '8px' }}>
-              <AlertCircle size={18} style={{ flexShrink: 0 }} />
-              {error}
+            <div className="form-feedback is-error" role="alert">
+              <AlertCircle size={18} />
+              <span>{error}</span>
             </div>
           )}
           {success && (
-            <div style={{ background: '#dcfce7', border: '1px solid #bbf7d0', color: '#16a34a', padding: '12px', borderRadius: '8px', fontSize: '14px', marginBottom: '12px', display: 'flex', gap: '8px' }}>
-              <CheckCircle size={18} style={{ flexShrink: 0 }} />
-              Inscription réussie, redirection...
+            <div className="form-feedback is-success">
+              <CheckCircle size={18} />
+              <span>Compte créé, redirection…</span>
             </div>
           )}
 
           <button
             type="submit"
             className="btn btn-primary btn-block btn-lg"
-            style={{ marginTop: 12, opacity: isValid && !loading ? 1 : 0.6 }}
+            style={{ marginTop: 12 }}
             disabled={!isValid || loading}
           >
-            {loading ? 'Création du compte...' : "S'inscrire"}
+            {loading ? 'Création…' : "S'inscrire"}
           </button>
         </form>
-        <div style={{ marginTop: 24, textAlign: 'center' }}>
-          <p className="muted small">
-            Déjà un compte? <Link to="/login" className="link">Se connecter</Link>
-          </p>
-        </div>
+
+        <p className="muted small" style={{ marginTop: 20, textAlign: 'center' }}>
+          Déjà un compte ? <Link to="/login" className="link">Se connecter</Link>
+        </p>
       </div>
     </div>
   )

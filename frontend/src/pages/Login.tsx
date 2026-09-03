@@ -1,89 +1,74 @@
-import { FormEvent, useState, useEffect } from 'react'
+import { FormEvent, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 import { useApiStore } from '@/store/apiStore'
-import { Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react'
+import { USERS } from '@/data/mockData'
+import type { UserRole } from '@/types'
+import { AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react'
 
-const USERS = [
-  { id: 1, email: 'admin@smartfleet.com', password: 'admin123', role: 'admin' },
-  { id: 2, email: 'gestion@smartfleet.com', password: 'gestion123', role: 'gestionnaire' },
-  { id: 3, email: 'conducteur@smartfleet.com', password: 'conduct123', role: 'conducteur' },
-]
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+function landingFor(role: UserRole) {
+  return role === 'conducteur' ? '/conducteur' : '/dashboard'
+}
 
 export function Login() {
   const { setUser } = useAuthStore()
   const { fetch, setToken } = useApiStore()
   const navigate = useNavigate()
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-  const [emailError, setEmailError] = useState('')
-  const [passwordError, setPasswordError] = useState('')
-  const [success, setSuccess] = useState(false)
   const [touched, setTouched] = useState({ email: false, password: false })
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState(false)
+  const [loading, setLoading] = useState(false)
 
-  // Validation email temps-réel
-  useEffect(() => {
-    if (!touched.email) return
-    if (!email) {
-      setEmailError('Email requis')
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setEmailError('Email invalide')
-    } else {
-      setEmailError('')
-    }
-  }, [email, touched.email])
+  const emailError = !email ? 'Email requis' : !EMAIL_RE.test(email) ? 'Email invalide' : ''
+  const passwordError = !password
+    ? 'Mot de passe requis'
+    : password.length < 6
+      ? 'Au moins 6 caractères'
+      : ''
+  const isValid = useMemo(() => !emailError && !passwordError, [emailError, passwordError])
 
-  // Validation password temps-réel
-  useEffect(() => {
-    if (!touched.password) return
-    if (!password) {
-      setPasswordError('Mot de passe requis')
-    } else if (password.length < 6) {
-      setPasswordError('Au moins 6 caractères')
-    } else {
-      setPasswordError('')
-    }
-  }, [password, touched.password])
-
-  const isValid = email && password && !emailError && !passwordError && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  const completeLogin = (user: { id: string; name: string; email: string; role: UserRole }) => {
+    setSuccess(true)
+    setUser(user)
+    setTimeout(() => navigate(landingFor(user.role)), 400)
+  }
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
+    setTouched({ email: true, password: true })
     if (!isValid) return
 
     setLoading(true)
     setError('')
     try {
-      const response = await fetch('/auth/login', {
+      const res = await fetch('/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email: email.trim(), password }),
       })
-      if (response && response.token) {
-        const role = String(response.role).toLowerCase() as 'admin' | 'gestionnaire' | 'conducteur'
-        setSuccess(true)
-        setToken(String(response.token))
-        setUser({ id: String(response.id), name: response.name, email: response.email, role })
-        setTimeout(() => {
-          navigate(role === 'conducteur' ? '/conducteur' : '/dashboard')
-        }, 500)
+      if (res?.token) {
+        setToken(String(res.token))
+        completeLogin({
+          id: String(res.id),
+          name: res.name,
+          email: res.email,
+          role: String(res.role).toLowerCase() as UserRole,
+        })
       } else {
-        setError('Identifiants incorrects')
+        setError('Identifiants incorrects.')
       }
-    } catch (err) {
+    } catch {
+      // Pas de backend joignable → mode démonstration (comptes mock).
       const mock = USERS.find((u) => u.email === email.trim() && u.password === password)
-      const message = err instanceof Error ? err.message : ''
-      if (mock && (message === 'API error' || message === 'Failed to fetch' || err instanceof TypeError)) {
-        const role = mock.role as 'admin' | 'gestionnaire' | 'conducteur'
-        setSuccess(true)
-        setUser({ id: String(mock.id), name: mock.email.split('@')[0], email: mock.email, role })
-        setTimeout(() => {
-          navigate(role === 'conducteur' ? '/conducteur' : '/dashboard')
-        }, 500)
+      if (mock) {
+        completeLogin({ id: mock.id, name: mock.name, email: mock.email, role: mock.role })
       } else {
-        setError(message && message !== 'Failed to fetch' ? message : 'Erreur de connexion')
+        setError('Identifiants incorrects (ou backend indisponible).')
       }
     } finally {
       setLoading(false)
@@ -94,89 +79,87 @@ export function Login() {
     <div className="login-page">
       <div className={`login-card ${success ? 'login-success' : ''}`}>
         <div className="login-logo">
-          <img src="/logo-smartfleet.png" alt="SmartFleet" style={{ maxHeight: 120, objectFit: 'contain' }} />
+          <img src="/logo-smartfleet.png" alt="Smart Fleet" />
         </div>
-        <p className="muted" style={{ marginBottom: 24 }}>
-          Gestion de flotte — Phase 1
+        <p className="muted" style={{ marginBottom: 24, textAlign: 'center' }}>
+          Gestion de flotte — connexion
         </p>
-        <form onSubmit={submit}>
+
+        <form onSubmit={submit} noValidate>
           <div className="field">
-            <label>Email {touched.email && emailError && <span style={{ color: '#dc2626' }}>*</span>}</label>
-            <div style={{ position: 'relative' }}>
+            <label htmlFor="login-email">Email</label>
+            <div className="input-wrap">
               <input
+                id="login-email"
                 type="email"
+                autoComplete="username"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                onBlur={() => setTouched({ ...touched, email: true })}
+                onBlur={() => setTouched((t) => ({ ...t, email: true }))}
                 placeholder="vous@smartfleet.com"
-                style={{
-                  borderColor: touched.email && emailError ? '#dc2626' : touched.email && !emailError ? '#16a34a' : undefined,
-                  background: touched.email && !emailError ? '#dcfce7' : undefined,
-                }}
+                className={touched.email ? (emailError ? 'input-err' : 'input-ok') : ''}
+                aria-invalid={touched.email && !!emailError}
               />
-              {touched.email && !emailError && email && <CheckCircle size={18} style={{ position: 'absolute', right: 12, top: 12, color: '#16a34a' }} />}
-              {touched.email && emailError && <AlertCircle size={18} style={{ position: 'absolute', right: 12, top: 12, color: '#dc2626' }} />}
+              {touched.email && !emailError && (
+                <CheckCircle size={18} className="input-affix" style={{ color: 'var(--green)' }} />
+              )}
             </div>
-            {emailError && touched.email && <p className="error-text">{emailError}</p>}
+            {touched.email && emailError && <p className="error-text">{emailError}</p>}
           </div>
+
           <div className="field">
-            <label>Mot de passe {touched.password && passwordError && <span style={{ color: '#dc2626' }}>*</span>}</label>
-            <div style={{ position: 'relative' }}>
+            <label htmlFor="login-password">Mot de passe</label>
+            <div className="input-wrap">
               <input
+                id="login-password"
                 type={showPassword ? 'text' : 'password'}
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                onBlur={() => setTouched({ ...touched, password: true })}
+                onBlur={() => setTouched((t) => ({ ...t, password: true }))}
                 placeholder="••••••••"
-                style={{
-                  borderColor: touched.password && passwordError ? '#dc2626' : touched.password && !passwordError ? '#16a34a' : undefined,
-                  background: touched.password && !passwordError ? '#dcfce7' : undefined,
-                }}
+                className={touched.password ? (passwordError ? 'input-err' : 'input-ok') : ''}
+                aria-invalid={touched.password && !!passwordError}
               />
               <button
                 type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                style={{
-                  position: 'absolute',
-                  right: 12,
-                  top: 12,
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: '#5b6b85',
-                }}
+                className="input-affix"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
-            {passwordError && touched.password && <p className="error-text">{passwordError}</p>}
+            {touched.password && passwordError && <p className="error-text">{passwordError}</p>}
           </div>
+
           {error && (
-            <div style={{ background: '#fee2e2', border: '1px solid #fecaca', color: '#dc2626', padding: '12px', borderRadius: '8px', fontSize: '14px', marginBottom: '12px', display: 'flex', gap: '8px' }}>
-              <AlertCircle size={18} style={{ flexShrink: 0 }} />
-              {error}
+            <div className="form-feedback is-error" role="alert">
+              <AlertCircle size={18} />
+              <span>{error}</span>
             </div>
           )}
           {success && (
-            <div style={{ background: '#dcfce7', border: '1px solid #bbf7d0', color: '#16a34a', padding: '12px', borderRadius: '8px', fontSize: '14px', marginBottom: '12px', display: 'flex', gap: '8px' }}>
-              <CheckCircle size={18} style={{ flexShrink: 0 }} />
-              Connexion réussie, redirection...
+            <div className="form-feedback is-success">
+              <CheckCircle size={18} />
+              <span>Connexion réussie, redirection…</span>
             </div>
           )}
+
           <button
             type="submit"
             className="btn btn-primary btn-block btn-lg"
-            style={{ marginTop: 12, opacity: isValid && !loading ? 1 : 0.6 }}
+            style={{ marginTop: 12 }}
             disabled={!isValid || loading}
           >
-            {loading ? 'Connexion...' : 'Se connecter'}
+            {loading ? 'Connexion…' : 'Se connecter'}
           </button>
         </form>
-        <div style={{ marginTop: 24, textAlign: 'center' }}>
-          <p className="muted small">
-            Pas de compte? <Link to="/register" className="link">S'inscrire</Link>
-          </p>
-        </div>
+
+        <p className="muted small" style={{ marginTop: 20, textAlign: 'center' }}>
+          Pas de compte ? <Link to="/register" className="link">S'inscrire</Link>
+        </p>
+
         <div className="demo-accounts">
           Comptes de démonstration :
           {USERS.map((u) => (
@@ -189,7 +172,14 @@ export function Login() {
                 setTouched({ email: true, password: true })
               }}
             >
-              <strong>{u.role === 'admin' ? 'Administrateur' : u.role === 'gestionnaire' ? 'Gestionnaire de flotte' : 'Conducteur'}</strong> — {u.email} / {u.password}
+              <strong>
+                {u.role === 'admin'
+                  ? 'Administrateur'
+                  : u.role === 'gestionnaire'
+                    ? 'Gestionnaire'
+                    : 'Conducteur'}
+              </strong>{' '}
+              — {u.email} / {u.password}
             </button>
           ))}
         </div>
