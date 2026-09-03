@@ -1,8 +1,24 @@
-import { ReactNode, useState } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { ReactNode, useEffect, useState } from 'react'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
+import { useFleetStore } from '@/store/fleetStore'
+import { SmartFleetLogo } from '@/components/SmartFleetLogo'
 import type { LucideIcon } from 'lucide-react'
-import { LayoutDashboard, Truck, Users, ClipboardList, Fuel, ClipboardCheck, BarChart3, Settings, Bell, Search, LogOut, ChevronDown, Menu, X } from 'lucide-react'
+import {
+  LayoutDashboard,
+  Truck,
+  Users,
+  ClipboardList,
+  Fuel,
+  ClipboardCheck,
+  BarChart3,
+  Bell,
+  FileText,
+  Settings,
+  LogOut,
+  Menu,
+  X,
+} from 'lucide-react'
 
 interface NavItem {
   to: string
@@ -15,102 +31,85 @@ interface NavSection {
   items: NavItem[]
 }
 
-const ADMIN_NAV: NavSection[] = [
+const BASE_NAV: NavSection[] = [
   {
-    title: 'NAVIGATION',
+    title: 'Pilotage',
     items: [
-      { to: '/dashboard', label: 'Dashboard', Icon: LayoutDashboard },
+      { to: '/dashboard', label: 'Tableau de bord', Icon: LayoutDashboard },
+      { to: '/alertes', label: 'Alertes', Icon: Bell },
+      { to: '/rapports', label: 'Rapports', Icon: FileText },
     ],
   },
   {
-    title: 'EXPLOITATION',
+    title: 'Exploitation',
     items: [
       { to: '/missions', label: 'Missions', Icon: ClipboardList },
       { to: '/flotte', label: 'Flotte', Icon: Truck },
-      { to: '/controles', label: 'Contrôles', Icon: ClipboardCheck },
+      { to: '/controles', label: 'Départs & retours', Icon: ClipboardCheck },
     ],
   },
   {
-    title: 'RESSOURCES',
+    title: 'Ressources',
     items: [
       { to: '/conducteurs', label: 'Conducteurs', Icon: Users },
       { to: '/carburant', label: 'Carburant', Icon: Fuel },
       { to: '/depenses', label: 'Dépenses', Icon: BarChart3 },
     ],
   },
-  {
-    title: 'ADMINISTRATION',
-    items: [
-      { to: '/utilisateurs', label: 'Utilisateurs', Icon: Users },
-      { to: '/parametres', label: 'Paramètres', Icon: Settings },
-    ],
-  },
 ]
 
-const GESTIONNAIRE_NAV: NavSection[] = [
-  {
-    title: 'NAVIGATION',
-    items: [
-      { to: '/dashboard', label: 'Dashboard', Icon: LayoutDashboard },
-    ],
-  },
-  {
-    title: 'EXPLOITATION',
-    items: [
-      { to: '/missions', label: 'Missions', Icon: ClipboardList },
-      { to: '/flotte', label: 'Flotte', Icon: Truck },
-      { to: '/controles', label: 'Contrôles', Icon: ClipboardCheck },
-    ],
-  },
-  {
-    title: 'RESSOURCES',
-    items: [
-      { to: '/conducteurs', label: 'Conducteurs', Icon: Users },
-      { to: '/carburant', label: 'Carburant', Icon: Fuel },
-    ],
-  },
-]
+const ADMIN_SECTION: NavSection = {
+  title: 'Administration',
+  items: [
+    { to: '/utilisateurs', label: 'Utilisateurs', Icon: Users },
+    { to: '/parametres', label: 'Paramètres', Icon: Settings },
+  ],
+}
 
-const CONDUCTEUR_NAV: NavSection[] = [
-  {
-    title: 'NAVIGATION',
-    items: [
-      { to: '/conducteur', label: 'Accueil', Icon: LayoutDashboard },
-      { to: '/conducteur/mission', label: 'Mes Missions', Icon: ClipboardList },
-      { to: '/conducteur/engin', label: 'Engin', Icon: Truck },
-    ],
-  },
-  {
-    title: 'OPÉRATIONS',
-    items: [
-      { to: '/conducteur/depart', label: 'Départ', Icon: ClipboardCheck },
-      { to: '/conducteur/retour', label: 'Retour', Icon: ClipboardCheck },
-    ],
-  },
-]
+const GESTION_SECTION: NavSection = {
+  title: 'Administration',
+  items: [{ to: '/parametres', label: 'Paramètres', Icon: Settings }],
+}
 
-function Sidebar({ role, isOpen, onClose }: { role: string; isOpen: boolean; onClose: () => void }) {
-  const navSections = role === 'admin' ? ADMIN_NAV : role === 'gestionnaire' ? GESTIONNAIRE_NAV : CONDUCTEUR_NAV
+function navForRole(role: string | undefined): NavSection[] {
+  return role === 'admin' ? [...BASE_NAV, ADMIN_SECTION] : [...BASE_NAV, GESTION_SECTION]
+}
+
+const ROLE_LABELS: Record<string, string> = {
+  admin: 'Administrateur',
+  gestionnaire: 'Gestionnaire de flotte',
+  conducteur: 'Conducteur',
+}
+
+function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const { user, logout } = useAuthStore()
+  const navigate = useNavigate()
+  const sections = navForRole(user?.role)
+
+  const handleLogout = () => {
+    logout()
+    navigate('/login')
+  }
 
   return (
     <>
-      {isOpen && <div className="sidebar-overlay" onClick={onClose} />}
+      {isOpen && <div className="sidebar-overlay is-visible" onClick={onClose} />}
       <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
-          <div className="logo-area">
-            <div className="logo-badge">SF</div>
+          <div className="logo-area" style={{ color: 'var(--brand)' }}>
+            <SmartFleetLogo size={30} />
             <div>
-              <div className="logo-title">SmartFleet</div>
-              <div className="logo-subtitle">Fleet Management</div>
+              <div className="logo-title">SMART FLEET</div>
+              <div className="logo-subtitle">Gestion de flotte</div>
             </div>
           </div>
-          <button className="sidebar-close" onClick={onClose}>
+          <button className="sidebar-close" onClick={onClose} aria-label="Fermer le menu">
             <X size={20} />
           </button>
         </div>
 
         <nav className="sidebar-nav">
-          {navSections.map((section) => (
+          {sections.map((section) => (
             <div key={section.title} className="nav-section">
               <div className="nav-section-title">{section.title}</div>
               <div className="nav-items">
@@ -129,84 +128,68 @@ function Sidebar({ role, isOpen, onClose }: { role: string; isOpen: boolean; onC
             </div>
           ))}
         </nav>
+
+        <div className="sidebar-footer">
+          <div className="sidebar-user">
+            <div className="avatar">{user?.name?.charAt(0).toUpperCase()}</div>
+            <div className="sidebar-user-meta">
+              <div className="name">{user?.name}</div>
+              <div className="role">{ROLE_LABELS[user?.role ?? ''] ?? user?.role}</div>
+            </div>
+          </div>
+          <button className="sidebar-logout" onClick={handleLogout}>
+            <LogOut size={16} />
+            Déconnexion
+          </button>
+        </div>
       </aside>
     </>
   )
 }
 
-function Header({ onMenuClick }: { onMenuClick: () => void }) {
-  const { user, logout } = useAuthStore()
+function Header({ title, onMenuClick }: { title: string; onMenuClick: () => void }) {
   const navigate = useNavigate()
-  const [profileOpen, setProfileOpen] = useState(false)
-  const [unreadCount] = useState(3)
-
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
-  }
+  const unread = useFleetStore((s) => s.alerts.filter((a) => !a.read).length)
 
   return (
     <header className="topbar">
       <div className="topbar-left">
-        <button className="menu-btn" onClick={onMenuClick}>
-          <Menu size={24} />
+        <button className="menu-btn" onClick={onMenuClick} aria-label="Ouvrir le menu">
+          <Menu size={22} />
         </button>
-        <div className="search-box">
-          <Search size={18} />
-          <input type="text" placeholder="Rechercher..." />
-        </div>
+        <span className="topbar-title">{title}</span>
       </div>
 
       <div className="topbar-right">
-        <button className="notification-btn" title="Notifications">
+        <button
+          className="notification-btn"
+          title="Alertes"
+          aria-label={`Alertes${unread ? ` (${unread} non lues)` : ''}`}
+          onClick={() => navigate('/alertes')}
+        >
           <Bell size={20} />
-          {unreadCount > 0 && <span className="badge">{unreadCount}</span>}
+          {unread > 0 && <span className="badge">{unread}</span>}
         </button>
-
-        <div className="profile-menu">
-          <button
-            className="profile-trigger"
-            onClick={() => setProfileOpen(!profileOpen)}
-          >
-            <div className="avatar">{user?.name?.charAt(0).toUpperCase()}</div>
-            <div className="profile-info">
-              <div className="name">{user?.name}</div>
-              <div className="role">{user?.role?.toUpperCase()}</div>
-            </div>
-            <ChevronDown size={16} />
-          </button>
-
-          {profileOpen && (
-            <div className="profile-dropdown">
-              <div className="dropdown-item">
-                <span>Email: {user?.email}</span>
-              </div>
-              <div className="dropdown-divider" />
-              <button className="dropdown-item logout" onClick={handleLogout}>
-                <LogOut size={16} />
-                Déconnexion
-              </button>
-            </div>
-          )}
-        </div>
       </div>
     </header>
   )
 }
 
 export function ProfessionalLayout({ children, title }: { children: ReactNode; title: string }) {
-  const { user } = useAuthStore()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const location = useLocation()
+
+  // Ferme le tiroir mobile à chaque changement de page
+  useEffect(() => {
+    setSidebarOpen(false)
+  }, [location.pathname])
 
   return (
     <div className="professional-layout">
-      <Sidebar role={user?.role || 'conducteur'} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="layout-main">
-        <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
+        <Header title={title} onMenuClick={() => setSidebarOpen((v) => !v)} />
         <main className="page-content">
-          <div className="page-header">
-            <h1 className="page-title">{title}</h1>
-          </div>
           <div className="page-body">{children}</div>
         </main>
       </div>

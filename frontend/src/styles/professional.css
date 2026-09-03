@@ -19,19 +19,19 @@
 
 /* SIDEBAR */
 .sidebar {
-  width: 260px;
+  width: var(--sidebar-width);
   background: var(--bg-primary);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  overflow: hidden;
   position: fixed;
   height: 100vh;
   left: 0;
   top: 0;
   z-index: 100;
   transform: translateX(0);
-  transition: transform 0.3s ease;
+  transition: transform 0.25s ease;
 }
 
 .sidebar.open {
@@ -56,14 +56,15 @@
 
 @media (min-width: 769px) {
   .layout-main {
-    margin-left: 260px;
+    margin-left: var(--sidebar-width);
   }
 
   .sidebar-close {
     display: none;
   }
 
-  .sidebar-overlay {
+  .sidebar-overlay,
+  .sidebar-overlay.is-visible {
     display: none;
   }
 }
@@ -71,9 +72,13 @@
 .sidebar-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(14, 26, 51, 0.45);
   z-index: 90;
   display: none;
+}
+
+.sidebar-overlay.is-visible {
+  display: block;
 }
 
 .sidebar-header {
@@ -181,6 +186,61 @@
   font-weight: 500;
 }
 
+/* SIDEBAR FOOTER (profil + déconnexion) */
+.sidebar-footer {
+  border-top: 1px solid var(--border);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.sidebar-user-meta {
+  min-width: 0;
+}
+
+.sidebar-user-meta .name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-user-meta .role {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.sidebar-logout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sidebar-logout:hover {
+  background: var(--red-light);
+  border-color: var(--red-light);
+  color: var(--red-dark);
+}
+
 /* TOPBAR */
 .topbar {
   background: var(--bg-primary);
@@ -189,11 +249,17 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 64px;
+  height: var(--topbar-height);
   position: sticky;
   top: 0;
   z-index: 50;
   box-shadow: var(--shadow-sm);
+}
+
+.topbar-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
 .topbar-left {
@@ -276,15 +342,16 @@
 
 .notification-btn .badge {
   position: absolute;
-  top: -4px;
-  right: -4px;
+  top: -2px;
+  right: -2px;
   background: var(--red);
-  color: white;
+  color: #fff;
   font-size: 10px;
   font-weight: 700;
-  width: 18px;
+  min-width: 18px;
   height: 18px;
-  border-radius: 50%;
+  padding: 0 4px;
+  border-radius: 999px;
   display: flex;
   align-items: center;
   justify-content: center;
