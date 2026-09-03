@@ -52,7 +52,13 @@ export function Register() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/auth/register', {
+      const res = await fetch<{
+        token?: string
+        id: string
+        name: string
+        email: string
+        role: string
+      }>('/auth/register', {
         method: 'POST',
         body: JSON.stringify({ name, email: email.trim(), password, role }),
       })

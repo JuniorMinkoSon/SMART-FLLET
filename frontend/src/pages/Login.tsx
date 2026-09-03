@@ -47,7 +47,13 @@ export function Login() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/auth/login', {
+      const res = await fetch<{
+        token?: string
+        id: string
+        name: string
+        email: string
+        role: string
+      }>('/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email: email.trim(), password }),
       })

@@ -1,112 +1,86 @@
-# Smart Fleet - Frontend
+# Smart Fleet — Frontend
 
-Interface utilisateur pour la gestion intelligente de flotte de véhicules.
+Interface web de gestion de flotte (engins de chantier & véhicules).
+React 18 · TypeScript · Vite · React Router · Zustand.
 
-## Architecture
+## Rôles
 
-### Structure des rôles
+| Rôle | Accès |
+|------|-------|
+| **admin** | Tout, plus la gestion des utilisateurs |
+| **gestionnaire** | Pilotage : tableau de bord, flotte, missions, contrôles, conducteurs, carburant, dépenses, alertes, rapports |
+| **conducteur** | Interface mobile : sa mission, son engin, saisie départ/retour |
 
-- **Admin** : Création et gestion des projets, affectation des engins
-- **Chef de projet** : Supervision du chantier, validation des rapports
-- **Opérateur** : Saisie des données quotidiennes (mobile-first)
-- **DG** : Vue consolidée, analyse de coûts et amortissement
+Le rôle renvoyé par le backend (`ADMIN` / `GESTIONNAIRE` / `CONDUCTEUR`) est
+normalisé en minuscules côté client.
 
-### Dossiers
-
-```
-src/
-├── pages/           # Pages par rôle
-├── components/      # Composants réutilisables
-├── store/           # État global (Zustand)
-├── types/           # Types TypeScript
-├── styles/          # Styles globaux
-└── utils/           # Utilitaires
-```
-
-## Installation
+## Démarrage
 
 ```bash
 npm install
+npm run dev        # http://localhost:5173
 ```
 
-## Développement
+### Comptes de démonstration (mode mock, sans backend)
+
+| Rôle | Email | Mot de passe |
+|------|-------|--------------|
+| Administrateur | `admin@smartfleet.com` | `admin123` |
+| Gestionnaire | `gestion@smartfleet.com` | `gestion123` |
+| Conducteur | `conducteur@smartfleet.com` | `conduct123` |
+
+## Données & API
+
+Le frontend fonctionne **hors-ligne par défaut** : les écrans sont alimentés
+par un store Zustand pré-rempli (`src/data/mockData.ts`). L'authentification
+tente d'abord le backend, puis retombe sur les comptes de démonstration.
+
+Point d'entrée réseau unique : `src/store/apiStore.ts` (`useApiStore().fetch`).
+
+| Env | Effet |
+|-----|-------|
+| _(rien)_ | appels relatifs `/api/...`, relayés au backend par le proxy Vite (aucun CORS) |
+| `VITE_BACKEND_ORIGIN` | cible du proxy de dev (défaut `http://localhost:9090`) |
+| `VITE_API_URL` | base absolue de l'API pour un build de prod / backend distant |
+
+Voir `.env.example`. Les écarts connus entre les DTO du backend Spring Boot et
+les types du frontend sont recensés dans `../FRONTEND_AUDIT_REPORT.md`
+(section `BACKEND_DEPENDENCY`).
+
+## Scripts
 
 ```bash
-npm run dev
+npm run dev          # serveur de dev
+npm run build        # tsc --noEmit + build de production (dist/)
+npm run type-check   # tsc seul
+npm run lint         # eslint (--max-warnings 0)
+npm test             # vitest (store, orchestrateur de missions, permissions)
 ```
 
-L'application sera disponible sur `http://localhost:5173`
+## Structure
 
-## Build
-
-```bash
-npm run build
+```
+src/
+├── components/
+│   ├── layout/ProfessionalLayout.tsx   # shell admin / gestionnaire (sidebar + topbar)
+│   ├── ui/index.tsx                    # Badges, KPICard, Drawer, Modal, Empty/Loader/Error
+│   ├── FleetChart.tsx                  # graphe "état du parc" (chart.js)
+│   └── SmartFleetLogo.tsx
+├── pages/
+│   ├── Login.tsx · Register.tsx
+│   ├── gestion/                        # écrans admin / gestionnaire
+│   └── conducteur/                     # écrans mobile conducteur (DriverLayout)
+├── store/        # authStore, fleetStore (mock), apiStore, auditStore
+├── services/     # MissionOrchestrator, PermissionService (RBAC)
+├── hooks/        # useMissionWorkflow
+├── data/mockData.ts
+├── types/index.ts
+└── styles/       # tokens.css (source de vérité) · global.css · professional.css
 ```
 
-## Test
+## Design system
 
-```bash
-npm run type-check
-npm run lint
-```
-
-## Architecture de l'état
-
-Utilisation de Zustand pour la gestion d'état :
-
-- `authStore` : Authentification et profil utilisateur
-- `fleetStore` : Données de la flotte (engins, projets, rapports, alertes)
-
-## API
-
-L'application s'attend à une API backend sur `http://localhost:8080/api`
-
-### Endpoints requis
-
-- `POST /api/auth/login`
-- `GET /api/engins`
-- `GET /api/projets`
-- `GET /api/alertes`
-- `GET /api/rapports`
-- `POST /api/rapports`
-
-## Composants principaux
-
-### ProtectedRoute
-Route protégée par rôle
-
-### Navbar
-Barre de navigation avec infos utilisateur
-
-### StatCard
-Carte statistique avec valeur et label
-
-### AlertBanner
-Banneau d'alerte avec différents niveaux de sévérité
-
-## Pages
-
-### Admin Dashboard
-- Création de projets
-- Gestion des engins
-- Affectations opérateurs
-- Anti-overbooking
-
-### Operateur Dashboard (Mobile-first)
-- Affichage de l'engin assigné
-- Saisie rapport journalier
-- Kilométrage + carburant
-- Preuve (photo)
-- État de l'engin
-
-### Chef de Projet Dashboard
-- Vue par chantier
-- Suivi des engins
-- Validation rapports
-- Incidents
-
-### Fleet Command (DG)
-- Vue globale de la flotte
-- Statistiques par chantier
-- Alertes critiques
-- Amortissement et coûts
+Toutes les couleurs, rayons, ombres et espacements sont des variables CSS
+définies **uniquement** dans `src/styles/tokens.css`. `global.css` porte le
+reset + les composants transverses, `professional.css` le shell applicatif.
+Ne jamais redéclarer `:root` ailleurs.
