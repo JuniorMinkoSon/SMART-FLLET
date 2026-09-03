@@ -55,6 +55,25 @@ Toolchain absente de la machine au démarrage : `git` et `Node.js LTS`
 installés via `winget` (accord préalable de Tiéné). Dépôt cloné en HTTPS
 (`github.com/JuniorMinkoSon/SMART-FLLET`).
 
+## Vérification finale (runtime, Chrome headless — pas seulement le code)
+
+| Élément | Statut | Preuve |
+|---|---|---|
+| Build | ✅ FAIT | `tsc && vite build` exit 0 (dernier run), `dist/` généré |
+| Lint / type-check | ✅ FAIT | `eslint --max-warnings 0` : 0, `tsc --noEmit` : 0 |
+| Tests unitaires | ✅ FAIT | `vitest run` : 20/20 |
+| Routes ADMIN (14) | ✅ FAIT | `/dashboard /flotte /flotte/:id /missions /missions/nouvelle /missions/:id /controles /conducteurs /carburant /depenses /alertes /rapports /utilisateurs /parametres` — captures OK, 0 erreur console, 0 requête API 4xx |
+| Routes CONDUCTEUR (6) | ✅ FAIT | `/conducteur{,/mission,/engin,/depart,/retour,/profil}` — captures OK, layout mobile `DriverLayout` |
+| RBAC frontend | ✅ FAIT | gestionnaire : pas de « Utilisateurs » dans le menu ; conducteur sur `/dashboard` → redirigé vers `/conducteur` ; `/utilisateurs` en gestionnaire → redirigé |
+| Dashboard = données réelles | ✅ FAIT | 10 engins / 3 dispo / 2 en mission / 2 maint. = mock ; graphe état du parc borné (barre 3 → ligne 3) ; « Actions à traiter » alimenté |
+| Badges de statut | ✅ FAIT | `/parametres` affiche les 6 statuts véhicule colorés ; `MissionBadge`/`DriverBadge` idem ; fallback `neutral` si inconnu |
+| Empty state | ✅ FAIT | test live : filtre flotte « zzzznomatch » → `EmptyState` « Aucun engin ne correspond à vos filtres » |
+| Register sans backend | ✅ FAIT | test live : soumission → session démo créée → redirection `/conducteur` (plus de faux « email existe déjà ») |
+| Login | ✅ FAIT | capture OK ; comptes démo ; toggle mot de passe ; validation au blur |
+| Responsive | ✅ FAIT | 390 px (mobile) : sidebar en tiroir + hamburger, topbar 1 ligne, tables défilent dans `.table-wrap`, filtres pleine largeur — aucun débordement horizontal du body. 820 px (tablette) : sidebar fixe + contenu fluide. 1440 px : nominal |
+| Console navigateur | ✅ FAIT | 0 erreur / 0 exception sur l'ensemble des routes ; seuls warnings = *React Router v7 future flags* (pré-existants, non bloquants) |
+| Aucun fichier backend modifié | ✅ FAIT | `git diff --name-only origin/main..HEAD` → uniquement `frontend/` + 3 `.md` racine |
+
 ## Reste à faire (non traité — hors périmètre frontend ou dépendant du backend)
 
 - `BACKEND_DEPENDENCY` BD-1 → BD-6 : contrats API / endpoints manquants côté Spring Boot.
