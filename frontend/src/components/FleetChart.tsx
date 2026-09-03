@@ -26,9 +26,14 @@ function cssVar(name: string, fallback: string): string {
 }
 
 export function FleetChart({ data }: FleetChartProps) {
-  const brand = cssVar('--brand', '#1f5eff')
+  const brand = cssVar('--brand', '#2563eb')
   const border = cssVar('--border', '#e3e8f0')
   const text = cssVar('--text-2', '#5b6b85')
+
+  // Axe Y borné aux valeurs réelles (petits entiers) : évite que Chart.js
+  // ajoute une marge et laisse une barre "à 3" flotter sous la ligne 3.
+  const maxCount = Math.max(1, ...data.map((d) => d.count))
+  const suggestedMax = maxCount <= 5 ? maxCount : Math.ceil(maxCount * 1.1)
 
   const chartData = {
     labels: data.map((d) => d.status),
@@ -52,6 +57,7 @@ export function FleetChart({ data }: FleetChartProps) {
         options={{
           responsive: true,
           maintainAspectRatio: false,
+          animation: { duration: 250 },
           plugins: {
             legend: { display: false },
             title: { display: false },
@@ -61,7 +67,8 @@ export function FleetChart({ data }: FleetChartProps) {
             x: { grid: { display: false }, ticks: { color: text } },
             y: {
               beginAtZero: true,
-              ticks: { color: text, precision: 0 },
+              max: suggestedMax,
+              ticks: { color: text, precision: 0, stepSize: 1 },
               grid: { color: border },
             },
           },

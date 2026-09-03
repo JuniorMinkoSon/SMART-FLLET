@@ -362,7 +362,8 @@ table.data-table {
   margin-bottom: 16px;
 }
 
-.filters input, .filters select { width: auto; min-width: 160px; flex: 1 1 160px; }
+.filters input, .filters select { width: auto; min-width: 160px; flex: 1 1 160px; max-width: 320px; }
+.filters input[type="search"], .filters input:not([type]) { max-width: 420px; }
 
 .section { margin-bottom: 20px; }
 .divider { border-top: 1px solid var(--border); margin: 16px 0; }

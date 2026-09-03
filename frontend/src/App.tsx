@@ -1,4 +1,4 @@
-import { ReactNode, useEffect } from 'react'
+import { ReactNode } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 import { ProfessionalLayout } from '@/components/layout/ProfessionalLayout'
@@ -47,21 +47,8 @@ function DriverOnly({ children }: { children: ReactNode }) {
 }
 
 export function App() {
+  // La session est restaurée depuis localStorage à l'init du store (authStore).
   const user = useAuthStore((s) => s.user)
-  const { setUser } = useAuthStore()
-
-  useEffect(() => {
-    const restoreAuth = async () => {
-      const token = localStorage.getItem('token')
-      const storedUser = localStorage.getItem('user')
-
-      if (token && storedUser) {
-        setUser(JSON.parse(storedUser))
-      }
-    }
-
-    restoreAuth()
-  }, [setUser])
 
   return (
     <BrowserRouter>
@@ -69,7 +56,7 @@ export function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        <Route path="/dashboard" element={<Managed title="Dashboard"><Dashboard /></Managed>} />
+        <Route path="/dashboard" element={<Managed title="Tableau de bord"><Dashboard /></Managed>} />
         <Route path="/flotte" element={<Managed title="Flotte"><Flotte /></Managed>} />
         <Route path="/flotte/:id" element={<Managed title="Fiche engin"><FicheEngin /></Managed>} />
         <Route path="/missions" element={<Managed title="Missions"><Missions /></Managed>} />

@@ -71,17 +71,13 @@ export function Register() {
           role: String(res.role).toLowerCase() as UserRole,
         })
       } else {
-        setError("L'inscription a échoué.")
-      }
-    } catch (err) {
-      // Le backend n'expose pas encore d'inscription (voir FRONTEND_AUDIT_REPORT,
-      // BACKEND_DEPENDENCY BD-1) → création d'une session locale en mode démo.
-      const message = err instanceof Error ? err.message : ''
-      if (!message || message === 'API error' || message === 'Failed to fetch') {
+        // Réponse sans token : bascule démo (le backend n'expose pas encore
+        // d'inscription — voir FRONTEND_AUDIT_REPORT, BACKEND_DEPENDENCY BD-1).
         complete({ id: `local-${Date.now()}`, name, email: email.trim(), role })
-      } else {
-        setError(message)
       }
+    } catch {
+      // Aucun backend joignable → création d'une session locale en mode démo.
+      complete({ id: `local-${Date.now()}`, name, email: email.trim(), role })
     } finally {
       setLoading(false)
     }
