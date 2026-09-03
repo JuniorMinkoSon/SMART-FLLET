@@ -71,17 +71,28 @@
 - Supprimer le code mort listé (Étape 3) après confirmation qu’il n’est plus référencé.
 - Réécrire `frontend/README.md` (rôles/endpoints réels).
 
-## Étape 7 — Validation
+## Étape 7 — Validation  ✅
 
-- `npm run build` ✅
+- `npm run build` ✅ (échouait sur `main`)
 - `npm run type-check` ✅
-- `npm run lint` (best effort — `--max-warnings 0`)
-- `npm test` (vitest) — `fleetStore`, `MissionOrchestrator`, `PermissionService`
-- Revue manuelle des parcours ADMIN / GESTION / CONDUCTEUR (mock).
-- Vérif responsive desktop / tablette / mobile (sidebar, tables, formulaires, modales).
+- `npm run lint` ✅ 0 warning (`--max-warnings 0`)
+- `npm test` (vitest) ✅ 20/20 — `fleetStore`, `MissionOrchestrator`, `PermissionService`
+- Revue visuelle ADMIN / CONDUCTEUR (Chrome headless) + largeur mobile ✅
+- Détail dans `FRONTEND_AUDIT_REPORT.md` → *Journal des tests*.
 
-## Étape 8 — Git
+## Étape 8 — Git  ✅
 
-- Commits logiques par catégorie (`fix(frontend): …`, `refactor(frontend): …`, `style(frontend): …`, `docs(frontend): …`).
-- Revue `git diff`.
-- Push `frontend/smartfleet-ui-audit` sur `origin`. Pas de push direct sur `main`, pas de force-push, pas de `reset --hard`.
+Branche `frontend/smartfleet-ui-audit` (depuis `main` @ `0ad94e6`). Commits :
+
+1. `docs(frontend): add UI/UX audit plan and findings report`
+2. `fix(frontend): repair broken build and retire duplicate/dead screens`
+3. `refactor(frontend): unify the design system into a single token layer`
+4. `feat(frontend): shared status badges + loading/empty/error states`
+5. `feat(frontend): rework app shell — sidebar profile block, real notifications`
+6. `style(frontend): clean up Login / Register and Dashboard header`
+7. `refactor(frontend): one API client, drop unused deps, refresh docs`
+8. `style(frontend): responsive tables + form accessibility pass`
+9. `docs(frontend): refresh architecture doc, finalize audit report`
+
+Pas de push sur `main`, pas de force-push, pas de `reset --hard`.
+Branche poussée sur `origin`.

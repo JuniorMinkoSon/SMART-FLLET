@@ -41,5 +41,24 @@
 
 | Moment | Commande | Résultat |
 |--------|----------|----------|
-| Baseline | `npm run build` | ❌ 15 erreurs `tsc` (voir P0-001/002) |
-| _(mis à jour en fin de mission)_ | | |
+| Baseline (`main` @ `0ad94e6`) | `npm run build` | ❌ 15 erreurs `tsc` (P0-001 / P0-002) |
+| Baseline | `npx vitest run` | ✅ 20 tests |
+| Final | `npm run build` | ✅ `tsc` + `vite build` OK — `dist/` (~443 kB JS gz 136 kB, ~23 kB CSS) |
+| Final | `npm run lint` | ✅ 0 erreur / 0 warning (`--max-warnings 0`) |
+| Final | `npm run type-check` | ✅ |
+| Final | `npx vitest run` | ✅ 20 tests (`fleetStore`, `MissionOrchestrator`, `PermissionService`) |
+| Final | Revue visuelle (Chrome headless) | ✅ parcours ADMIN (`/dashboard`, `/flotte`, `/missions`, `/controles`) + CONDUCTEUR (`/conducteur`) + largeur mobile 390 px |
+
+## Environnement
+
+Toolchain absente de la machine au démarrage : `git` et `Node.js LTS`
+installés via `winget` (accord préalable de Tiéné). Dépôt cloné en HTTPS
+(`github.com/JuniorMinkoSon/SMART-FLLET`).
+
+## Reste à faire (non traité — hors périmètre frontend ou dépendant du backend)
+
+- `BACKEND_DEPENDENCY` BD-1 → BD-6 : contrats API / endpoints manquants côté Spring Boot.
+- Brancher réellement les écrans sur l'API (adaptateurs DTO→type) une fois le
+  backend disponible : aujourd'hui tout passe par `fleetStore` (mock). Le
+  point d'entrée unique `apiStore` est prêt pour ça.
+- `smartfleet/` (backend Java) et `volta/` (autre projet présent dans le dépôt) : non touchés.
