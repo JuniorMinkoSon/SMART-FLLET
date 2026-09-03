@@ -115,17 +115,18 @@ export function CounterForm({ mode }: { mode: 'depart' | 'retour' }) {
           {vehicle.code} — {vehicle.type}
         </p>
         <div className="field">
-          <label>Compteur (km)</label>
-          <input type="number" value={km} onChange={(e) => setKm(e.target.value)} />
+          <label htmlFor="cf-km">Compteur (km)</label>
+          <input id="cf-km" type="number" min="0" value={km} onChange={(e) => setKm(e.target.value)} />
         </div>
         <div className="field">
-          <label>Heures moteur</label>
-          <input type="number" value={hours} onChange={(e) => setHours(e.target.value)} />
+          <label htmlFor="cf-hours">Heures moteur</label>
+          <input id="cf-hours" type="number" min="0" value={hours} onChange={(e) => setHours(e.target.value)} />
         </div>
         <div className="field">
-          <label>Carburant — {fuel} %</label>
+          <label htmlFor="cf-fuel">Carburant — {fuel} %</label>
           <div className="range-row">
             <input
+              id="cf-fuel"
               type="range"
               min={0}
               max={100}
@@ -150,8 +151,8 @@ export function CounterForm({ mode }: { mode: 'depart' | 'retour' }) {
         ))}
         {showAnomaly ? (
           <div className="field" style={{ marginTop: 10 }}>
-            <label>Anomalie</label>
-            <textarea rows={3} value={anomaly} onChange={(e) => setAnomaly(e.target.value)} placeholder="Décrire l'anomalie..." />
+            <label htmlFor="cf-anomaly">Anomalie</label>
+            <textarea id="cf-anomaly" rows={3} value={anomaly} onChange={(e) => setAnomaly(e.target.value)} placeholder="Décrire l'anomalie…" />
           </div>
         ) : (
           <button className="link-btn" onClick={() => setShowAnomaly(true)}>

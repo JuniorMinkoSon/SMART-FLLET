@@ -127,12 +127,18 @@ export function Depenses() {
       <Drawer open={addOpen} title="Ajouter une dépense" onClose={() => setAddOpen(false)}>
         <form onSubmit={submit}>
           <div className="field">
-            <label>Libellé</label>
-            <input value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })} required />
+            <label htmlFor="exp-label">Libellé</label>
+            <input
+              id="exp-label"
+              value={form.label}
+              onChange={(e) => setForm({ ...form, label: e.target.value })}
+              required
+            />
           </div>
           <div className="field">
-            <label>Type</label>
+            <label htmlFor="exp-category">Type</label>
             <select
+              id="exp-category"
               value={form.category}
               onChange={(e) => setForm({ ...form, category: e.target.value as ExpenseCategory })}
             >
@@ -142,8 +148,12 @@ export function Depenses() {
             </select>
           </div>
           <div className="field">
-            <label>Engin (optionnel)</label>
-            <select value={form.vehicleId} onChange={(e) => setForm({ ...form, vehicleId: e.target.value })}>
+            <label htmlFor="exp-vehicle">Engin (optionnel)</label>
+            <select
+              id="exp-vehicle"
+              value={form.vehicleId}
+              onChange={(e) => setForm({ ...form, vehicleId: e.target.value })}
+            >
               <option value="">Aucun</option>
               {vehicles.map((v) => (
                 <option key={v.id} value={v.id}>
@@ -153,9 +163,11 @@ export function Depenses() {
             </select>
           </div>
           <div className="field">
-            <label>Montant (FCFA)</label>
+            <label htmlFor="exp-amount">Montant (FCFA)</label>
             <input
+              id="exp-amount"
               type="number"
+              min="0"
               value={form.amount}
               onChange={(e) => setForm({ ...form, amount: e.target.value })}
               required

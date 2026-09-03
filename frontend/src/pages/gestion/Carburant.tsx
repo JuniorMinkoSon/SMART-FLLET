@@ -138,13 +138,14 @@ export function Carburant() {
       <Drawer open={addOpen} title="Nouveau ravitaillement" onClose={() => setAddOpen(false)}>
         <form onSubmit={submit}>
           <div className="field">
-            <label>Engin</label>
+            <label htmlFor="fuel-vehicle">Engin</label>
             <select
+              id="fuel-vehicle"
               value={form.vehicleId}
               onChange={(e) => setForm({ ...form, vehicleId: e.target.value })}
               required
             >
-              <option value="">Sélectionner...</option>
+              <option value="">Sélectionner…</option>
               {vehicles.map((v) => (
                 <option key={v.id} value={v.id}>
                   {v.code} — {v.type}
@@ -153,35 +154,42 @@ export function Carburant() {
             </select>
           </div>
           <div className="field">
-            <label>Volume (litres)</label>
+            <label htmlFor="fuel-liters">Volume (litres)</label>
             <input
+              id="fuel-liters"
               type="number"
+              min="0"
               value={form.liters}
               onChange={(e) => setForm({ ...form, liters: e.target.value })}
               required
             />
           </div>
           <div className="field">
-            <label>Montant (FCFA)</label>
+            <label htmlFor="fuel-amount">Montant (FCFA)</label>
             <input
+              id="fuel-amount"
               type="number"
+              min="0"
               value={form.amount}
               onChange={(e) => setForm({ ...form, amount: e.target.value })}
               required
             />
           </div>
           <div className="field">
-            <label>Station</label>
+            <label htmlFor="fuel-station">Station</label>
             <input
+              id="fuel-station"
               value={form.station}
               onChange={(e) => setForm({ ...form, station: e.target.value })}
               placeholder="Total Marcory"
             />
           </div>
           <div className="field">
-            <label>Kilométrage au ravitaillement</label>
+            <label htmlFor="fuel-km">Kilométrage au ravitaillement</label>
             <input
+              id="fuel-km"
               type="number"
+              min="0"
               value={form.km}
               onChange={(e) => setForm({ ...form, km: e.target.value })}
             />

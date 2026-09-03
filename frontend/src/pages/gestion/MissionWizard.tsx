@@ -77,16 +77,18 @@ export function MissionWizard() {
         {step === 0 && (
           <>
             <div className="field">
-              <label>Chantier</label>
+              <label htmlFor="mw-site">Chantier</label>
               <input
+                id="mw-site"
                 value={site}
                 onChange={(e) => setSite(e.target.value)}
                 placeholder="Chantier Alpha"
               />
             </div>
             <div className="field">
-              <label>Client (optionnel)</label>
+              <label htmlFor="mw-client">Client (optionnel)</label>
               <input
+                id="mw-client"
                 value={client}
                 onChange={(e) => setClient(e.target.value)}
                 placeholder="Génie Sélect"
@@ -94,18 +96,20 @@ export function MissionWizard() {
             </div>
             <div className="grid-2">
               <div className="field">
-                <label>Début</label>
-                <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                <label htmlFor="mw-start">Début</label>
+                <input id="mw-start" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
               </div>
               <div className="field">
-                <label>Fin</label>
-                <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                <label htmlFor="mw-end">Fin</label>
+                <input id="mw-end" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
               </div>
             </div>
             <div className="field">
-              <label>Budget (FCFA)</label>
+              <label htmlFor="mw-budget">Budget (FCFA)</label>
               <input
+                id="mw-budget"
                 type="number"
+                min="0"
                 value={budget}
                 onChange={(e) => setBudget(e.target.value)}
                 placeholder="1 500 000"

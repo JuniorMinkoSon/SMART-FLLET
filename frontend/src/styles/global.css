@@ -704,4 +704,9 @@ table.data-table {
 @media (max-width: 768px) {
   .grid-2 { grid-template-columns: 1fr; }
   .page-header { gap: 12px; }
+  /* Les tableaux gardent des colonnes lisibles et défilent horizontalement
+     dans leur conteneur .table-wrap plutôt que de s'écraser. */
+  .table-wrap .data-table { min-width: 620px; }
+  .filters input,
+  .filters select { flex: 1 1 100%; min-width: 0; }
 }

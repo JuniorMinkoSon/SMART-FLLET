@@ -145,8 +145,9 @@ export function Flotte() {
       >
         <form onSubmit={submit}>
           <div className="field">
-            <label>Code</label>
+            <label htmlFor="veh-code">Code</label>
             <input
+              id="veh-code"
               value={form.code}
               onChange={(e) => setForm({ ...form, code: e.target.value })}
               placeholder="P-011"
@@ -154,16 +155,21 @@ export function Flotte() {
             />
           </div>
           <div className="field">
-            <label>Type</label>
-            <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
+            <label htmlFor="veh-type">Type</label>
+            <select
+              id="veh-type"
+              value={form.type}
+              onChange={(e) => setForm({ ...form, type: e.target.value })}
+            >
               {['Pelle', 'Bulldozer', 'Niveleuse', 'Camion', 'Grue', 'Compacteur'].map((t) => (
                 <option key={t}>{t}</option>
               ))}
             </select>
           </div>
           <div className="field">
-            <label>Désignation</label>
+            <label htmlFor="veh-name">Désignation</label>
             <input
+              id="veh-name"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               placeholder="Pelle hydraulique"
@@ -171,8 +177,9 @@ export function Flotte() {
             />
           </div>
           <div className="field">
-            <label>Immatriculation</label>
+            <label htmlFor="veh-plate">Immatriculation</label>
             <input
+              id="veh-plate"
               value={form.plate}
               onChange={(e) => setForm({ ...form, plate: e.target.value })}
               placeholder="CM-0000-XX"
