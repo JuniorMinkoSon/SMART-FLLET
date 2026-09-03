@@ -1,7 +1,7 @@
 import { FormEvent, useCallback, useEffect, useState } from 'react'
 import { useApiStore } from '@/store/apiStore'
 import { useFleetStore } from '@/store/fleetStore'
-import { Drawer, DriverBadge } from '@/components/ui'
+import { Drawer, DriverBadge, EmptyState } from '@/components/ui'
 import type { Driver } from '@/types'
 
 export function Conducteurs() {
@@ -56,6 +56,9 @@ export function Conducteurs() {
       </div>
 
       <div className="card table-wrap" style={{ padding: 0 }}>
+        {drivers.length === 0 ? (
+          <EmptyState title="Aucun conducteur" message="Ajoutez un conducteur pour commencer." />
+        ) : (
         <table className="data-table">
           <thead>
             <tr>
@@ -78,6 +81,7 @@ export function Conducteurs() {
             ))}
           </tbody>
         </table>
+        )}
       </div>
 
       <Drawer open={addOpen} title="Ajouter un conducteur" onClose={() => setAddOpen(false)}>

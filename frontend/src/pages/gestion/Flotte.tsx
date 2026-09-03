@@ -1,7 +1,7 @@
 import { FormEvent, useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useFleetStore } from '@/store/fleetStore'
-import { Drawer, StatusBadge } from '@/components/ui'
+import { Drawer, EmptyState, StatusBadge } from '@/components/ui'
 import { Vehicle } from '@/types'
 import { apiIntegrator } from '@/services/ApiIntegrator'
 
@@ -107,6 +107,16 @@ export function Flotte() {
       </div>
 
       <div className="card table-wrap" style={{ padding: 0 }}>
+        {filtered.length === 0 ? (
+          <EmptyState
+            title="Aucun engin"
+            message={
+              vehicles.length === 0
+                ? "La flotte est vide. Ajoutez un premier engin pour commencer."
+                : 'Aucun engin ne correspond à vos filtres.'
+            }
+          />
+        ) : (
         <table className="data-table">
           <thead>
             <tr>
@@ -144,6 +154,7 @@ export function Flotte() {
             ))}
           </tbody>
         </table>
+        )}
       </div>
 
       <Drawer

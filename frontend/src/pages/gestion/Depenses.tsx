@@ -1,6 +1,6 @@
 import { FormEvent, useState } from 'react'
 import { useFleetStore } from '@/store/fleetStore'
-import { Drawer } from '@/components/ui'
+import { Drawer, EmptyState } from '@/components/ui'
 import { formatFCFA } from '@/utils/format'
 import { ExpenseCategory } from '@/types'
 
@@ -83,6 +83,16 @@ export function Depenses() {
       </div>
 
       <div className="card table-wrap" style={{ padding: 0 }}>
+        {filtered.length === 0 ? (
+          <EmptyState
+            title="Aucune dépense"
+            message={
+              expenses.length === 0
+                ? 'Ajoutez une dépense pour suivre le budget.'
+                : 'Aucune dépense ne correspond à vos filtres.'
+            }
+          />
+        ) : (
         <table className="data-table">
           <thead>
             <tr>
@@ -111,6 +121,7 @@ export function Depenses() {
             })}
           </tbody>
         </table>
+        )}
       </div>
 
       <Drawer open={addOpen} title="Ajouter une dépense" onClose={() => setAddOpen(false)}>

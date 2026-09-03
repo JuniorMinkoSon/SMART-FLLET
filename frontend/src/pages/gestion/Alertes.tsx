@@ -1,4 +1,5 @@
 import { useFleetStore } from '@/store/fleetStore'
+import { EmptyState } from '@/components/ui'
 import { AlertSeverity } from '@/types'
 import { AlertCircle, AlertTriangle, Info, Bell, type LucideIcon } from 'lucide-react'
 
@@ -22,6 +23,12 @@ export function Alertes() {
           <p className="page-subtitle">Toutes les alertes du parc, par niveau de priorité</p>
         </div>
       </div>
+
+      {alerts.length === 0 && (
+        <div className="card">
+          <EmptyState title="Aucune alerte" message="Tout est sous contrôle : aucune alerte active sur le parc." />
+        </div>
+      )}
 
       {SEV_ORDER.map((sev) => {
         const items = alerts.filter((a) => a.severity === sev)

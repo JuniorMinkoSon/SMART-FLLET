@@ -1,7 +1,7 @@
 import { FormEvent, useState } from 'react'
 import { useFleetStore } from '@/store/fleetStore'
 import { useMissionWorkflow } from '@/hooks/useMissionWorkflow'
-import { Drawer } from '@/components/ui'
+import { Drawer, EmptyState } from '@/components/ui'
 import { formatFCFA, formatNumber } from '@/utils/format'
 
 export function Carburant() {
@@ -99,6 +99,9 @@ export function Carburant() {
       </div>
 
       <div className="card table-wrap" style={{ padding: 0 }}>
+        {fuelEntries.length === 0 ? (
+          <EmptyState title="Aucun ravitaillement" message="Enregistrez un ravitaillement pour suivre la consommation." />
+        ) : (
         <table className="data-table">
           <thead>
             <tr>
@@ -129,6 +132,7 @@ export function Carburant() {
             })}
           </tbody>
         </table>
+        )}
       </div>
 
       <Drawer open={addOpen} title="Nouveau ravitaillement" onClose={() => setAddOpen(false)}>
