@@ -48,6 +48,7 @@ public class Mission {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private MissionStatus status = MissionStatus.AFFECTEE;
 
     @Column(name = "departure_km")

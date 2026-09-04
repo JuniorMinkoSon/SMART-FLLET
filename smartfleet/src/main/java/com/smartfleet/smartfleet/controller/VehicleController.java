@@ -52,19 +52,11 @@ public class VehicleController {
         return ResponseEntity.ok(vehicles.stream().map(this::mapToResponse).toList());
     }
 
+    /**
+     * La projection vit sur le DTO : elle était dupliquée ici alors qu'elle
+     * décrit la vue exposée, pas le routage.
+     */
     private VehicleResponse mapToResponse(Vehicle vehicle) {
-        return new VehicleResponse(
-            vehicle.getId(),
-            vehicle.getCode(),
-            vehicle.getType(),
-            vehicle.getLicensePlate(),
-            vehicle.getStatus(),
-            vehicle.getInitialKm(),
-            vehicle.getCurrentKm(),
-            vehicle.getEngineHours(),
-            vehicle.getFuelLevel(),
-            vehicle.getCreatedAt(),
-            vehicle.getUpdatedAt()
-        );
+        return VehicleResponse.from(vehicle);
     }
 }

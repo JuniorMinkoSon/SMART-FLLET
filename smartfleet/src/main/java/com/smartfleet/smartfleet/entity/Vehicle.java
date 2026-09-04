@@ -28,20 +28,66 @@ public class Vehicle {
     @NotBlank
     private String licensePlate;
 
+    /**
+     * Désignation d'usage, distincte du code d'inventaire.
+     *
+     * Sur le terrain un engin s'appelle « Pelle Komatsu 210 », pas « VH-0042 » :
+     * le code sert au suivi, le nom sert à se comprendre.
+     */
+    @Column(name = "name")
+    private String name;
+
+    /**
+     * État général de l'engin, indépendant de sa disponibilité du moment.
+     *
+     * La colonne reste nullable : une contrainte NOT NULL empêcherait d'ajouter
+     * le champ à une flotte déjà enregistrée. La valeur par défaut est garantie
+     * par le builder et à la persistance, et une valeur absente est présentée
+     * comme « Bon » par le DTO.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "vehicle_condition")
+    @Builder.Default
+    private VehicleCondition condition = VehicleCondition.BON;
+
+    /** Site d'affectation. Sert au filtrage et au regroupement de la flotte. */
+    @Column(name = "site")
+    private String site;
+
+    /**
+     * Conducteur affecté au véhicule.
+     *
+     * À ne pas confondre avec le conducteur d'une mission, porté par
+     * {@link Mission} : celui-ci change à chaque course, l'affectation ici est
+     * durable. Un véhicule sans conducteur affecté reste parfaitement valide,
+     * la relation est donc facultative.
+     *
+     * Chargement paresseux : la liste de flotte n'a pas besoin du conducteur
+     * complet, et un chargement systématique multiplierait les requêtes.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_driver_id")
+    private Driver assignedDriver;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private VehicleStatus status = VehicleStatus.DISPONIBLE;
 
     @Column(nullable = false)
+    @Builder.Default
     private Integer initialKm = 0;
 
     @Column(nullable = false)
+    @Builder.Default
     private Integer currentKm = 0;
 
     @Column(nullable = false)
+    @Builder.Default
     private Integer engineHours = 0;
 
     @Column(nullable = false)
+    @Builder.Default
     private Integer fuelLevel = 100;
 
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -54,6 +100,9 @@ public class Vehicle {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
+        if (condition == null) {
+            condition = VehicleCondition.BON;
+        }
     }
 
     @PreUpdate
