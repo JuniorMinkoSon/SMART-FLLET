@@ -143,3 +143,56 @@ export interface FleetAlert {
   time: string
   read: boolean
 }
+
+
+// ---------------------------------------------------------------------------
+// Contrôles et maintenance
+// ---------------------------------------------------------------------------
+
+/** État général d'un engin, distinct de sa disponibilité. */
+export type VehicleCondition = 'BON' | 'MOYEN' | 'MAUVAIS'
+
+export type InspectionType = 'AVANT_DEPART' | 'APRES_MISSION' | 'QUOTIDIEN' | 'PERIODIQUE'
+
+/** Trois niveaux : une anomalie mineure doit pouvoir être consignée sans immobiliser. */
+export type InspectionResult = 'OK' | 'ATTENTION' | 'CRITIQUE'
+
+export interface Inspection {
+  id: string
+  vehicleId: string
+  vehicleCode: string
+  missionId?: string
+  missionCode?: string
+  type: InspectionType
+  tyresOk: boolean
+  brakesOk: boolean
+  lightsOk: boolean
+  bodyworkOk: boolean
+  result: InspectionResult
+  anomaly?: string
+  kmReading?: number
+  inspectorName?: string
+  createdAt: string
+}
+
+export type MaintenanceType = 'PREVENTIVE' | 'CORRECTIVE' | 'REGLEMENTAIRE'
+export type MaintenanceStatus = 'PLANIFIEE' | 'EN_COURS' | 'TERMINEE' | 'ANNULEE'
+
+export interface Maintenance {
+  id: string
+  vehicleId: string
+  vehicleCode: string
+  /** Contrôle à l'origine de l'intervention, s'il y en a un. */
+  inspectionId?: string
+  type: MaintenanceType
+  status: MaintenanceStatus
+  description: string
+  scheduledDate?: string
+  completedDate?: string
+  /** Renseigné à la clôture seulement. */
+  cost?: number
+  provider?: string
+  kmReading?: number
+  notes?: string
+  createdAt: string
+}

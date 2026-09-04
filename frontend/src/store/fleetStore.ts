@@ -3,6 +3,8 @@ import { useApiStore } from './apiStore'
 import { toVehicle, toDriver, toMission, toAlert, toFuelEntry } from '@/services/adapters'
 import type {
   Vehicle, Driver, Mission, FuelEntry, Expense, FleetAlert, CounterReading,
+  Inspection, Maintenance, InspectionType, InspectionResult,
+  MaintenanceType, VehicleCondition,
 } from '@/types'
 
 /**
@@ -27,6 +29,8 @@ interface FleetState {
   fuelEntries: FuelEntry[]
   expenses: Expense[]
   alerts: FleetAlert[]
+  inspections: Inspection[]
+  maintenances: Maintenance[]
 
   /** Vrai pendant le premier chargement, pour distinguer « vide » de « pas encore lu ». */
   loading: boolean
@@ -59,6 +63,40 @@ interface FleetState {
   /** Charge les pleins. Réservé aux rôles de gestion. */
   loadFuelEntries: () => Promise<void>
   addExpense: (e: Omit<Expense, 'id'>) => Promise<void>
+  /** Enregistre un contrôle. Un verdict critique immobilise le véhicule côté serveur. */
+  recordInspection: (input: {
+    vehicleId: string
+    missionId?: string
+    type: InspectionType
+    tyresOk: boolean
+    brakesOk: boolean
+    lightsOk: boolean
+    bodyworkOk: boolean
+    result?: InspectionResult
+    anomaly?: string
+    kmReading?: number
+  }) => Promise<boolean>
+
+  scheduleMaintenance: (input: {
+    vehicleId: string
+    type: MaintenanceType
+    description: string
+    scheduledDate?: string
+    provider?: string
+  }) => Promise<boolean>
+
+  startMaintenance: (id: string) => Promise<boolean>
+
+  /** Le coût est exigé : sans lui l'intervention sort des indicateurs de flotte. */
+  completeMaintenance: (id: string, input: {
+    cost: number
+    provider?: string
+    notes?: string
+    resultingCondition?: VehicleCondition
+  }) => Promise<boolean>
+
+  cancelMaintenance: (id: string) => Promise<boolean>
+
   markAlertsRead: () => void
 }
 
@@ -80,6 +118,8 @@ export const useFleetStore = create<FleetState>((set, get) => ({
   fuelEntries: [],
   expenses: [],
   alerts: [],
+  inspections: [],
+  maintenances: [],
 
   loading: false,
   error: null,
@@ -97,7 +137,8 @@ export const useFleetStore = create<FleetState>((set, get) => ({
     try {
       // Les quatre lectures partent ensemble : elles sont indépendantes, et les
       // enchaîner tripleraient le temps d'affichage du tableau de bord.
-      const [vehicles, drivers, missions, alerts, fuel] = await Promise.all([
+      const [vehicles, drivers, missions, alerts, fuel, inspections, maintenances] =
+        await Promise.all([
         api.fetch<unknown[]>('/vehicles'),
         api.fetch<unknown[]>('/drivers'),
         api.fetch<unknown[]>('/missions'),
@@ -105,6 +146,8 @@ export const useFleetStore = create<FleetState>((set, get) => ({
         // leur refus ne doit pas vider la flotte pour un conducteur.
         api.fetch<unknown[]>('/alerts').catch(() => [] as unknown[]),
         api.fetch<unknown[]>('/fuel-entries').catch(() => [] as unknown[]),
+        api.fetch<unknown[]>('/inspections').catch(() => [] as unknown[]),
+        api.fetch<unknown[]>('/maintenances').catch(() => [] as unknown[]),
       ])
 
       set({
@@ -113,6 +156,10 @@ export const useFleetStore = create<FleetState>((set, get) => ({
         missions: (missions ?? []).map((m) => toMission(m as never)),
         alerts: (alerts ?? []).map((a) => toAlert(a as never)),
         fuelEntries: (fuel ?? []).map((e) => toFuelEntry(e as never)),
+        // Contrôles et interventions arrivent déjà au bon format : le serveur
+        // les expose avec le vocabulaire de l'interface.
+        inspections: (inspections ?? []) as Inspection[],
+        maintenances: (maintenances ?? []) as Maintenance[],
         error: null,
       })
     } catch (err) {
@@ -289,6 +336,72 @@ export const useFleetStore = create<FleetState>((set, get) => ({
     // Les dépenses n'ont ni entité ni endpoint : annoncer un enregistrement
     // serait mentir sur ce que fait le bouton.
     set({ error: "L'enregistrement des dépenses n'est pas encore disponible." })
+  },
+
+  recordInspection: async (input) => {
+    const api = useApiStore.getState()
+    try {
+      await api.fetch('/inspections', { method: 'POST', body: JSON.stringify(input) })
+      // Un contrôle critique change le statut du véhicule et ouvre une
+      // intervention : le rechargement complet est nécessaire pour que la
+      // flotte et l'atelier reflètent la conséquence.
+      await get().refresh()
+      return true
+    } catch (err) {
+      set({ error: describe(err) })
+      return false
+    }
+  },
+
+  scheduleMaintenance: async (input) => {
+    const api = useApiStore.getState()
+    try {
+      await api.fetch('/maintenances', { method: 'POST', body: JSON.stringify(input) })
+      await get().refresh()
+      return true
+    } catch (err) {
+      set({ error: describe(err) })
+      return false
+    }
+  },
+
+  startMaintenance: async (id) => {
+    const api = useApiStore.getState()
+    try {
+      await api.fetch(`/maintenances/${id}/start`, { method: 'POST' })
+      await get().refresh()
+      return true
+    } catch (err) {
+      set({ error: describe(err) })
+      return false
+    }
+  },
+
+  completeMaintenance: async (id, input) => {
+    const api = useApiStore.getState()
+    try {
+      await api.fetch(`/maintenances/${id}/complete`, {
+        method: 'POST',
+        body: JSON.stringify(input),
+      })
+      await get().refresh()
+      return true
+    } catch (err) {
+      set({ error: describe(err) })
+      return false
+    }
+  },
+
+  cancelMaintenance: async (id) => {
+    const api = useApiStore.getState()
+    try {
+      await api.fetch(`/maintenances/${id}/cancel`, { method: 'POST' })
+      await get().refresh()
+      return true
+    } catch (err) {
+      set({ error: describe(err) })
+      return false
+    }
   },
 
   markAlertsRead: () => {

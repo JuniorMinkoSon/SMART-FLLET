@@ -6,8 +6,27 @@ import { formatNumber } from '@/utils/format'
 import { Mission } from '@/types'
 import { Check, AlertTriangle } from 'lucide-react'
 
+const INSPECTION_TYPE_LABELS: Record<string, string> = {
+  AVANT_DEPART: 'Avant départ',
+  APRES_MISSION: 'Retour de mission',
+  QUOTIDIEN: 'Contrôle quotidien',
+  PERIODIQUE: 'Contrôle périodique',
+}
+
+const RESULT_LABELS: Record<string, string> = {
+  OK: 'Conforme',
+  ATTENTION: 'À surveiller',
+  CRITIQUE: 'Bloquant',
+}
+
+const RESULT_CLASS: Record<string, string> = {
+  OK: 'badge-cloture',
+  ATTENTION: 'badge-encours',
+  CRITIQUE: 'badge-danger',
+}
+
 export function Controles() {
-  const { vehicles, drivers } = useFleetStore()
+  const { vehicles, drivers, inspections } = useFleetStore()
   const { getVisibleMissions, validateReturn } = useMissionWorkflow()
   const [confirm, setConfirm] = useState<{ mission: Mission; action: 'valider' | 'maintenance' } | null>(null)
 
@@ -141,6 +160,64 @@ export function Controles() {
             </div>
           )
         })}
+      </div>
+
+      <div className="section">
+        <h3 style={{ marginBottom: 12 }}>Contrôles enregistrés ({inspections.length})</h3>
+
+        {inspections.length === 0 && (
+          <div className="card">
+            <EmptyState message="Aucun contrôle n'a encore été enregistré sur la flotte." />
+          </div>
+        )}
+
+        {inspections.length > 0 && (
+          <div className="card table-wrap" style={{ padding: 0 }}>
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Engin</th>
+                  <th>Moment</th>
+                  <th>Points vérifiés</th>
+                  <th>Verdict</th>
+                  <th>Anomalie</th>
+                  <th>Contrôleur</th>
+                </tr>
+              </thead>
+              <tbody>
+                {inspections.map((i) => {
+                  const faults = [
+                    !i.tyresOk && 'pneus',
+                    !i.brakesOk && 'freins',
+                    !i.lightsOk && 'éclairage',
+                    !i.bodyworkOk && 'carrosserie',
+                  ].filter(Boolean) as string[]
+
+                  return (
+                    <tr key={i.id}>
+                      <td className="strong">{i.vehicleCode}</td>
+                      <td>{INSPECTION_TYPE_LABELS[i.type] ?? i.type}</td>
+                      <td>
+                        {/* Nommer les points en défaut plutôt que compter les
+                            cases : c'est ce qui dit à l'atelier quoi regarder. */}
+                        {faults.length === 0
+                          ? <span className="muted">Tous conformes</span>
+                          : faults.join(', ')}
+                      </td>
+                      <td>
+                        <span className={`badge ${RESULT_CLASS[i.result] ?? 'badge-neutre'}`}>
+                          {RESULT_LABELS[i.result] ?? i.result}
+                        </span>
+                      </td>
+                      <td>{i.anomaly || '—'}</td>
+                      <td>{i.inspectorName || 'Système'}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       <Modal

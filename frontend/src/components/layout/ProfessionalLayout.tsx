@@ -11,6 +11,7 @@ import {
   ClipboardList,
   Fuel,
   ClipboardCheck,
+  Wrench,
   BarChart3,
   Bell,
   FileText,
@@ -46,6 +47,7 @@ const BASE_NAV: NavSection[] = [
       { to: '/missions', label: 'Missions', Icon: ClipboardList },
       { to: '/flotte', label: 'Flotte', Icon: Truck },
       { to: '/controles', label: 'Départs & retours', Icon: ClipboardCheck },
+      { to: '/atelier', label: 'Atelier', Icon: Wrench },
     ],
   },
   {

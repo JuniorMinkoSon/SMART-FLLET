@@ -12,6 +12,7 @@ import { Missions } from '@/pages/gestion/Missions'
 import { MissionWizard } from '@/pages/gestion/MissionWizard'
 import { MissionDetail } from '@/pages/gestion/MissionDetail'
 import { Controles } from '@/pages/gestion/Controles'
+import { Maintenance } from '@/pages/gestion/Maintenance'
 import { Conducteurs } from '@/pages/gestion/Conducteurs'
 import { Carburant } from '@/pages/gestion/Carburant'
 import { Depenses } from '@/pages/gestion/Depenses'
@@ -65,6 +66,7 @@ export function App() {
         <Route path="/missions/nouvelle" element={<Managed title="Créer une mission"><MissionWizard /></Managed>} />
         <Route path="/missions/:id" element={<Managed title="Mission"><MissionDetail /></Managed>} />
         <Route path="/controles" element={<Managed title="Départs & retours"><Controles /></Managed>} />
+        <Route path="/atelier" element={<Managed title="Atelier"><Maintenance /></Managed>} />
         <Route path="/conducteurs" element={<Managed title="Conducteurs"><Conducteurs /></Managed>} />
         <Route path="/carburant" element={<Managed title="Carburant"><Carburant /></Managed>} />
         <Route path="/depenses" element={<Managed title="Dépenses"><Depenses /></Managed>} />
