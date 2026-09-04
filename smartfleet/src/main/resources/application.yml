@@ -3,20 +3,21 @@ spring:
     name: smartfleet
 
   datasource:
-    url: jdbc:h2:~/smartfleet;MODE=MySQL;AUTO_SERVER=TRUE
-    username: sa
-    password:
-    driver-class-name: org.h2.Driver
+    # Base fichier : les donnees survivent au redemarrage (create-drop les effacait).
+    url: ${SPRING_DATASOURCE_URL:jdbc:h2:file:./data/smartfleet;MODE=MySQL;AUTO_SERVER=TRUE}
+    username: ${SPRING_DATASOURCE_USERNAME:sa}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME:org.h2.Driver}
   h2:
     console:
-      enabled: true
+      enabled: ${H2_CONSOLE_ENABLED:false}
 
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: ${JPA_DDL_AUTO:update}
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.H2Dialect
+        dialect: ${JPA_DIALECT:org.hibernate.dialect.H2Dialect}
         jdbc:
           batch_size: 20
         order_inserts: true
@@ -26,6 +27,10 @@ spring:
 
   flyway:
     enabled: false
+
+  jackson:
+    serialization:
+      indent-output: true
 
   autoconfigure:
     exclude:
@@ -40,39 +45,45 @@ spring:
       - org.springframework.boot.autoconfigure.data.redis.RedisConnectionFactoryAutoConfiguration
       - org.springframework.ai.vectorstore.redis.autoconfigure.RedisVectorStoreAutoConfiguration
 
+# /actuator/health doit repondre 200 : c'est le healthcheck du docker-compose.
 management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
   endpoint:
     health:
+      show-details: never
       probes:
-        enabled: false
+        enabled: true
   health:
     livenessState:
-      enabled: false
+      enabled: true
     readinessState:
+      enabled: true
+    # Pas de serveur SMTP ni de Redis dans ce deploiement : ces indicateurs
+    # faisaient repondre /actuator/health en DOWN et cassaient le healthcheck Docker.
+    mail:
       enabled: false
-
-  security:
-    filter:
-      order: 5
-
-  jackson:
-    serialization:
-      indent-output: true
+    redis:
+      enabled: false
+    ping:
+      enabled: true
 
 logging:
   level:
     root: INFO
     com.smartfleet: DEBUG
-    org.springframework.security: DEBUG
+    org.springframework.security: INFO
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
 
 server:
-  port: 9090
+  port: ${SERVER_PORT:9090}
   address: 0.0.0.0
   servlet:
     context-path: /
 
 app:
   cors:
-    allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:5174,http://localhost:5175}
+    allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:5174,http://localhost:4173,http://localhost:3000}

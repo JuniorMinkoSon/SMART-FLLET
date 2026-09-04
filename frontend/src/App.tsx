@@ -2,6 +2,7 @@ import { ReactNode } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 import { ProfessionalLayout } from '@/components/layout/ProfessionalLayout'
+import { Landing } from '@/pages/Landing'
 import { Login } from '@/pages/Login'
 import { Register } from '@/pages/Register'
 import { Dashboard } from '@/pages/gestion/Dashboard'
@@ -53,6 +54,7 @@ export function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
@@ -91,7 +93,7 @@ export function App() {
           path="*"
           element={
             <Navigate
-              to={!user ? '/login' : user.role === 'conducteur' ? '/conducteur' : '/dashboard'}
+              to={!user ? '/' : user.role === 'conducteur' ? '/conducteur' : '/dashboard'}
               replace
             />
           }

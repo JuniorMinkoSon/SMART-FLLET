@@ -13,7 +13,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -55,8 +54,8 @@ public class MissionController {
     /** Missions du conducteur connecte (ecran mobile operateur). */
     @GetMapping("/me")
     @PreAuthorize("hasRole('CONDUCTEUR')")
-    public ResponseEntity<List<MissionResponse>> getMyMissions(Authentication auth) {
-        return ResponseEntity.ok(missionService.getDriverMissions(auth.getName()).stream()
+    public ResponseEntity<List<MissionResponse>> getMyMissions() {
+        return ResponseEntity.ok(missionService.getDriverMissions(securityUtil.getCurrentUserId()).stream()
             .map(MissionResponse::from).toList());
     }
 

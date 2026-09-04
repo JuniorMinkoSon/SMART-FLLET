@@ -1,45 +1,66 @@
-version: '3.8'
-
 services:
-  # Spring Boot Backend (H2 in-memory database)
+  # ---------------------------------------------------------------------------
+  # Backend Spring Boot. Ecoute sur 9090 (voir smartfleet/application.yml) :
+  # l'ancien compose mappait 8080 et sondait 8080/actuator/health, donc le
+  # service etait injoignable et le healthcheck toujours KO.
+  # ---------------------------------------------------------------------------
   backend:
     build:
       context: ./smartfleet
       dockerfile: Dockerfile
     container_name: smartfleet-backend
     environment:
-      SPRING_PROFILES_ACTIVE: dev
-      SPRING_DATASOURCE_URL: jdbc:h2:mem:smartfleet
-      SPRING_DATASOURCE_USERNAME: sa
-      SPRING_DATASOURCE_PASSWORD: ""
+      SERVER_PORT: 9090
+      # Base fichier persistee dans un volume : les donnees survivent au
+      # redemarrage du conteneur.
+      SPRING_DATASOURCE_URL: jdbc:h2:file:/data/smartfleet;MODE=MySQL;AUTO_SERVER=TRUE
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME:-sa}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-}
       SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.h2.Driver
-      JWT_SECRET: ${JWT_SECRET:-smartfleet_secret_key_demo_2026}
+      JPA_DDL_AUTO: update
+      # Origine du navigateur autorisee a appeler l'API.
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8081,http://localhost:5173}
     ports:
-      - "${BACKEND_PORT:-8080}:8080"
+      - "${BACKEND_PORT:-9090}:9090"
+    volumes:
+      - smartfleet-data:/data
     networks:
       - smartfleet-net
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      test: ["CMD-SHELL", "wget -q -O- http://localhost:9090/actuator/health | grep -q UP"]
       interval: 10s
       timeout: 5s
-      retries: 3
+      retries: 10
+      start_period: 60s
 
-  # React Frontend
+  # ---------------------------------------------------------------------------
+  # Frontend : build Vite servi par nginx, qui relaie /api vers le backend.
+  # Le navigateur ne parle donc qu'a une seule origine (pas de CORS).
+  # ---------------------------------------------------------------------------
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        # URL relative : nginx proxifie /api vers le service backend.
+        VITE_API_URL: ""
     container_name: smartfleet-frontend
     ports:
-      - "${FRONTEND_PORT:-3000}:3000"
-    environment:
-      VITE_API_URL: http://localhost:8080
-      VITE_USE_BACKEND: "true"
+      - "${FRONTEND_PORT:-8081}:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - smartfleet-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://localhost/ >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
 
 networks:
   smartfleet-net:
     driver: bridge
+
+volumes:
+  smartfleet-data:

@@ -23,6 +23,7 @@ public class MissionService {
     private final MissionRepository missionRepository;
     private final VehicleRepository vehicleRepository;
     private final DriverRepository driverRepository;
+    private final UserRepository userRepository;
     private final AuditService auditService;
 
     /* ================================================================== */
@@ -184,13 +185,24 @@ public class MissionService {
         return missionRepository.findAll();
     }
 
-    /** Missions du conducteur identifie par l'email de son compte utilisateur. */
+    /**
+     * Missions du conducteur connecte. Le principal de securite porte
+     * l'identifiant utilisateur, pas l'email : on resout donc le compte puis
+     * le conducteur correspondant (par relation user, sinon par email).
+     */
     @Transactional(readOnly = true)
-    public List<Mission> getDriverMissions(String userEmail) {
+    public List<Mission> getDriverMissions(String userId) {
+        var user = userRepository.findById(userId).orElse(null);
+        if (user == null) return List.of();
+
+        String email = user.getEmail();
         return missionRepository.findAll().stream()
-            .filter(m -> m.getDriver() != null
-                      && m.getDriver().getEmail() != null
-                      && m.getDriver().getEmail().equalsIgnoreCase(userEmail))
+            .filter(m -> {
+                Driver d = m.getDriver();
+                if (d == null) return false;
+                if (d.getUser() != null && userId.equals(d.getUser().getId())) return true;
+                return d.getEmail() != null && d.getEmail().equalsIgnoreCase(email);
+            })
             .toList();
     }
 
