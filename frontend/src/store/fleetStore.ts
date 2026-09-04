@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { useApiStore } from './apiStore'
-import { toVehicle, toDriver, toMission, toAlert } from '@/services/adapters'
+import { toVehicle, toDriver, toMission, toAlert, toFuelEntry } from '@/services/adapters'
 import type {
   Vehicle, Driver, Mission, FuelEntry, Expense, FleetAlert, CounterReading,
 } from '@/types'
@@ -56,6 +56,8 @@ interface FleetState {
   validateReturn: (missionId: string) => Promise<void>
   sendToMaintenance: (missionId: string) => Promise<void>
   addFuelEntry: (f: Omit<FuelEntry, 'id'>) => Promise<void>
+  /** Charge les pleins. Réservé aux rôles de gestion. */
+  loadFuelEntries: () => Promise<void>
   addExpense: (e: Omit<Expense, 'id'>) => Promise<void>
   markAlertsRead: () => void
 }
@@ -95,13 +97,14 @@ export const useFleetStore = create<FleetState>((set, get) => ({
     try {
       // Les quatre lectures partent ensemble : elles sont indépendantes, et les
       // enchaîner tripleraient le temps d'affichage du tableau de bord.
-      const [vehicles, drivers, missions, alerts] = await Promise.all([
+      const [vehicles, drivers, missions, alerts, fuel] = await Promise.all([
         api.fetch<unknown[]>('/vehicles'),
         api.fetch<unknown[]>('/drivers'),
         api.fetch<unknown[]>('/missions'),
-        // Les alertes ne sont lisibles que par les rôles de gestion : leur
-        // refus ne doit pas vider la flotte pour un conducteur.
+        // Alertes et pleins ne sont lisibles que par les rôles de gestion :
+        // leur refus ne doit pas vider la flotte pour un conducteur.
         api.fetch<unknown[]>('/alerts').catch(() => [] as unknown[]),
+        api.fetch<unknown[]>('/fuel-entries').catch(() => [] as unknown[]),
       ])
 
       set({
@@ -109,6 +112,7 @@ export const useFleetStore = create<FleetState>((set, get) => ({
         drivers: (drivers ?? []).map((d) => toDriver(d as never)),
         missions: (missions ?? []).map((m) => toMission(m as never)),
         alerts: (alerts ?? []).map((a) => toAlert(a as never)),
+        fuelEntries: (fuel ?? []).map((e) => toFuelEntry(e as never)),
         error: null,
       })
     } catch (err) {
@@ -246,22 +250,38 @@ export const useFleetStore = create<FleetState>((set, get) => ({
   },
 
   addFuelEntry: async (f) => {
+    // Un plein s'impute à une mission : c'est elle qui porte le véhicule et la
+    // période. Sans elle, la consommation ne se rattache à aucun engin et le
+    // coût au kilomètre devient faux.
+    if (!f.missionId) {
+      set({ error: 'Un plein doit être rattaché à une mission.' })
+      return
+    }
+
     const api = useApiStore.getState()
     try {
-      await api.fetch('/fuel-entries', {
+      await api.fetch(`/fuel-entries?missionId=${encodeURIComponent(f.missionId)}`, {
         method: 'POST',
         body: JSON.stringify({
-          missionId: f.missionId,
           quantity: f.liters,
           cost: f.amount,
           station: f.station,
         }),
       })
-      await get().refresh()
+      await get().loadFuelEntries()
     } catch (err) {
-      // L'endpoint de saisie n'existe pas encore côté serveur : l'écran doit le
-      // dire plutôt que de laisser croire à un enregistrement.
       set({ error: describe(err) })
+    }
+  },
+
+  loadFuelEntries: async () => {
+    const api = useApiStore.getState()
+    try {
+      const rows = await api.fetch<unknown[]>('/fuel-entries')
+      set({ fuelEntries: (rows ?? []).map((e) => toFuelEntry(e as never)) })
+    } catch {
+      // Réservé aux rôles de gestion : un conducteur ne voit pas la liste
+      // complète, ce qui n'est pas une erreur à afficher.
     }
   },
 

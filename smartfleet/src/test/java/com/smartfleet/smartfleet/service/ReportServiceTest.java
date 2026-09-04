@@ -222,7 +222,7 @@ class ReportServiceTest {
         assertEquals(50_000, fuel.getTotalCost());
         assertEquals(40, fuel.getAverageLevel());
         assertEquals(1, fuel.getLowFuelVehicles());
-        assertEquals("Total Abidjan Port", fuel.getTopStations().get(0).getKey());
+        assertEquals("Total Abidjan Port", fuel.getTopStations().get(0).getStation());
     }
 
     @Test

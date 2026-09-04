@@ -199,9 +199,10 @@ public class ReportService {
             }
         }
 
-        List<Map.Entry<String, Integer>> topStations = stations.entrySet().stream()
+        List<StationCount> topStations = stations.entrySet().stream()
             .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
             .limit(5)
+            .map(e -> StationCount.builder().station(e.getKey()).count(e.getValue()).build())
             .toList();
 
         return FuelSummary.builder()

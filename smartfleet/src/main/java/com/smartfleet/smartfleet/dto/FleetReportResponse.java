@@ -111,6 +111,23 @@ public class FleetReportResponse {
         private int missingMatricule;
     }
 
+    /**
+     * Fréquentation d'une station.
+     *
+     * Un type nommé plutôt qu'une entrée de dictionnaire : sérialisée, celle-ci
+     * produit un objet dont la clé est le nom de la station, si bien que la
+     * forme de la réponse change avec les données et devient illisible pour
+     * l'appelant.
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class StationCount {
+        private String station;
+        private int count;
+    }
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
@@ -127,6 +144,6 @@ public class FleetReportResponse {
         private int lowFuelVehicles;
 
         /** Stations les plus utilisées, par nombre de pleins. */
-        private List<Map.Entry<String, Integer>> topStations;
+        private List<StationCount> topStations;
     }
 }
