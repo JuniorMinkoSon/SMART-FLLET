@@ -179,10 +179,27 @@ export function ProfessionalLayout({ children, title }: { children: ReactNode; t
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const location = useLocation()
 
+  const loadFleet = useFleetStore((s) => s.load)
+  const fleetLoaded = useFleetStore((s) => s.loaded)
+  const fleetError = useFleetStore((s) => s.error)
+
   // Ferme le tiroir mobile à chaque changement de page
   useEffect(() => {
     setSidebarOpen(false)
   }, [location.pathname])
+
+  /**
+   * Chargement de la flotte à l'entrée dans l'espace connecté.
+   *
+   * Une seule fois : les écrans partagent le même magasin, et recharger à chaque
+   * changement de page rejouerait quatre appels pour des données déjà en main.
+   * Les écritures déclenchent leur propre rafraîchissement.
+   */
+  useEffect(() => {
+    if (!fleetLoaded) {
+      void loadFleet()
+    }
+  }, [fleetLoaded, loadFleet])
 
   return (
     <div className="professional-layout">
@@ -190,7 +207,17 @@ export function ProfessionalLayout({ children, title }: { children: ReactNode; t
       <div className="layout-main">
         <Header title={title} onMenuClick={() => setSidebarOpen((v) => !v)} />
         <main className="page-content">
-          <div className="page-body">{children}</div>
+          <div className="page-body">
+            {/* Une panne de chargement est annoncée une fois, en tête, plutôt
+                que répétée dans chaque écran vide de la page. */}
+            {fleetError && (
+              <div className="fleet-load-error" role="status">
+                <strong>Données indisponibles.</strong> {fleetError}
+                <button type="button" onClick={() => void loadFleet()}>Réessayer</button>
+              </div>
+            )}
+            {children}
+          </div>
         </main>
       </div>
     </div>

@@ -1,34 +1,24 @@
 import { create } from 'zustand'
-import {
-  Vehicle,
-  Driver,
-  Mission,
-  FuelEntry,
-  Expense,
-  FleetAlert,
-  CounterReading,
+import { useApiStore } from './apiStore'
+import { toVehicle, toDriver, toMission, toAlert } from '@/services/adapters'
+import type {
+  Vehicle, Driver, Mission, FuelEntry, Expense, FleetAlert, CounterReading,
 } from '@/types'
-import {
-  VEHICLES,
-  DRIVERS,
-  MISSIONS,
-  FUEL_ENTRIES,
-  EXPENSES,
-  ALERTS,
-} from '@/data/mockData'
 
-let seq = 100
-
-function nextId(prefix: string): string {
-  seq += 1
-  return `${prefix}${seq}`
-}
-
-function now(): string {
-  const d = new Date()
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`
-}
+/**
+ * État de la flotte, alimenté par le serveur.
+ *
+ * Ce magasin ne détient aucune donnée simulée : tout vient de l'API et y
+ * retourne. Il joue le rôle de cache partagé entre les écrans — quatorze pages
+ * lisent le même état, et un rechargement après écriture suffit à les remettre
+ * toutes d'accord, sans que chacune ait à réinterroger le serveur.
+ *
+ * Les écritures suivent toujours le même schéma : appel serveur, puis
+ * rechargement. Mettre l'état à jour localement en même temps donnerait une
+ * réponse plus vive mais laisserait l'écran diverger de la base dès qu'une règle
+ * serveur intervient — l'anti-surréservation, un changement de statut en
+ * cascade. Ici l'affichage montre toujours ce qui est réellement enregistré.
+ */
 
 interface FleetState {
   vehicles: Vehicle[]
@@ -38,8 +28,20 @@ interface FleetState {
   expenses: Expense[]
   alerts: FleetAlert[]
 
-  addVehicle: (v: Omit<Vehicle, 'id'>) => void
-  addDriver: (d: Omit<Driver, 'id'>) => void
+  /** Vrai pendant le premier chargement, pour distinguer « vide » de « pas encore lu ». */
+  loading: boolean
+  /** Message d'erreur du dernier appel, à afficher tel quel. */
+  error: string | null
+  /** Faux tant qu'aucun chargement n'a abouti. */
+  loaded: boolean
+
+  /** Charge l'ensemble de la flotte. Appelé au montage de l'espace connecté. */
+  load: () => Promise<void>
+  /** Recharge sans repasser par l'état de chargement initial. */
+  refresh: () => Promise<void>
+
+  addVehicle: (v: Omit<Vehicle, 'id'>) => Promise<void>
+  addDriver: (d: Omit<Driver, 'id'>) => Promise<void>
   createMission: (data: {
     site: string
     client?: string
@@ -48,201 +50,231 @@ interface FleetState {
     startDate: string
     endDate: string
     budget: number
-  }) => Mission
-  recordDeparture: (missionId: string, reading: Omit<CounterReading, 'time'>) => void
-  recordReturn: (missionId: string, reading: Omit<CounterReading, 'time'>) => void
-  validateReturn: (missionId: string) => void
-  sendToMaintenance: (missionId: string) => void
-  addFuelEntry: (f: Omit<FuelEntry, 'id'>) => void
-  addExpense: (e: Omit<Expense, 'id'>) => void
+  }) => Promise<Mission | null>
+  recordDeparture: (missionId: string, reading: Omit<CounterReading, 'time'>) => Promise<void>
+  recordReturn: (missionId: string, reading: Omit<CounterReading, 'time'>) => Promise<void>
+  validateReturn: (missionId: string) => Promise<void>
+  sendToMaintenance: (missionId: string) => Promise<void>
+  addFuelEntry: (f: Omit<FuelEntry, 'id'>) => Promise<void>
+  addExpense: (e: Omit<Expense, 'id'>) => Promise<void>
   markAlertsRead: () => void
 }
 
+/** Message lisible : l'écran affiche cette chaîne telle quelle. */
+function describe(err: unknown): string {
+  if (err instanceof Error) return err.message
+  return 'Le serveur est injoignable.'
+}
+
+/** Les dates de mission sont saisies au jour ; le serveur attend une date seule. */
+function toDateOnly(value: string): string {
+  return value.length > 10 ? value.slice(0, 10) : value
+}
+
 export const useFleetStore = create<FleetState>((set, get) => ({
-  vehicles: VEHICLES,
-  drivers: DRIVERS,
-  missions: MISSIONS,
-  fuelEntries: FUEL_ENTRIES,
-  expenses: EXPENSES,
-  alerts: ALERTS,
+  vehicles: [],
+  drivers: [],
+  missions: [],
+  fuelEntries: [],
+  expenses: [],
+  alerts: [],
 
-  addVehicle: (v) =>
-    set((s) => ({ vehicles: [...s.vehicles, { ...v, id: nextId('v') }] })),
+  loading: false,
+  error: null,
+  loaded: false,
 
-  addDriver: (d) =>
-    set((s) => ({ drivers: [...s.drivers, { ...d, id: nextId('d') }] })),
-
-  createMission: (data) => {
-    const count = get().missions.length
-    const mission: Mission = {
-      id: nextId('m'),
-      code: `MS-${String(84 + count - 4).padStart(4, '0')}`,
-      status: 'affectee',
-      timeline: [
-        { label: 'Mission créée', time: now() },
-        { label: 'Engin affecté', time: now() },
-      ],
-      ...data,
-    }
-    set((s) => ({
-      missions: [mission, ...s.missions],
-      vehicles: s.vehicles.map((v) =>
-        v.id === data.vehicleId
-          ? { ...v, status: 'reserve', site: data.site, driverId: data.driverId }
-          : v
-      ),
-      drivers: s.drivers.map((d) =>
-        d.id === data.driverId ? { ...d, status: 'reserve' } : d
-      ),
-    }))
-    return mission
+  load: async () => {
+    set({ loading: true, error: null })
+    await get().refresh()
+    set({ loading: false, loaded: true })
   },
 
-  recordDeparture: (missionId, reading) =>
-    set((s) => {
-      const mission = s.missions.find((m) => m.id === missionId)
-      if (!mission) return s
-      if (mission.status !== 'affectee') return s
-      return {
-        missions: s.missions.map((m) =>
-          m.id === missionId
-            ? {
-                ...m,
-                status: 'en_cours',
-                departure: { ...reading, time: now() },
-                timeline: [...m.timeline, { label: 'Départ enregistré', time: now() }],
-              }
-            : m
-        ),
-        vehicles: s.vehicles.map((v) =>
-          v.id === mission.vehicleId
-            ? {
-                ...v,
-                status: 'en_mission',
-                km: reading.km,
-                engineHours: reading.engineHours,
-                fuelLevel: reading.fuelLevel,
-              }
-            : v
-        ),
-        drivers: s.drivers.map((d) =>
-          d.id === mission.driverId ? { ...d, status: 'en_mission' } : d
-        ),
-      }
-    }),
+  refresh: async () => {
+    const api = useApiStore.getState()
 
-  recordReturn: (missionId, reading) =>
-    set((s) => {
-      const mission = s.missions.find((m) => m.id === missionId)
-      if (!mission) return s
-      if (mission.status !== 'en_cours') return s
-      return {
-        missions: s.missions.map((m) =>
-          m.id === missionId
-            ? {
-                ...m,
-                status: 'controle',
-                arrival: { ...reading, time: now() },
-                timeline: [...m.timeline, { label: 'Retour enregistré', time: now() }],
-              }
-            : m
-        ),
-        vehicles: s.vehicles.map((v) =>
-          v.id === mission.vehicleId
-            ? {
-                ...v,
-                status: 'controle',
-                km: reading.km,
-                engineHours: reading.engineHours,
-                fuelLevel: reading.fuelLevel,
-              }
-            : v
-        ),
-        alerts: [
-          {
-            id: nextId('a'),
-            severity: 'urgent' as const,
-            title: `Retour à contrôler — mission ${mission.code}`,
-            detail: 'Un retour de mission attend votre contrôle.',
-            time: 'À l’instant',
-            read: false,
-          },
-          ...s.alerts,
-        ],
-      }
-    }),
+    try {
+      // Les quatre lectures partent ensemble : elles sont indépendantes, et les
+      // enchaîner tripleraient le temps d'affichage du tableau de bord.
+      const [vehicles, drivers, missions, alerts] = await Promise.all([
+        api.fetch<unknown[]>('/vehicles'),
+        api.fetch<unknown[]>('/drivers'),
+        api.fetch<unknown[]>('/missions'),
+        // Les alertes ne sont lisibles que par les rôles de gestion : leur
+        // refus ne doit pas vider la flotte pour un conducteur.
+        api.fetch<unknown[]>('/alerts').catch(() => [] as unknown[]),
+      ])
 
-  validateReturn: (missionId) =>
-    set((s) => {
-      const mission = s.missions.find((m) => m.id === missionId)
-      if (!mission) return s
-      if (mission.status !== 'controle') return s
-      return {
-        missions: s.missions.map((m) =>
-          m.id === missionId
-            ? {
-                ...m,
-                status: 'cloturee',
-                timeline: [...m.timeline, { label: 'Retour validé — mission clôturée', time: now() }],
-              }
-            : m
-        ),
-        vehicles: s.vehicles.map((v) =>
-          v.id === mission.vehicleId
-            ? { ...v, status: 'disponible', site: undefined, driverId: undefined }
-            : v
-        ),
-        drivers: s.drivers.map((d) =>
-          d.id === mission.driverId ? { ...d, status: 'disponible' } : d
-        ),
-      }
-    }),
+      set({
+        vehicles: (vehicles ?? []).map((v) => toVehicle(v as never)),
+        drivers: (drivers ?? []).map((d) => toDriver(d as never)),
+        missions: (missions ?? []).map((m) => toMission(m as never)),
+        alerts: (alerts ?? []).map((a) => toAlert(a as never)),
+        error: null,
+      })
+    } catch (err) {
+      // L'état précédent est conservé : effacer la flotte sur un incident
+      // réseau ferait croire à une flotte vide.
+      set({ error: describe(err) })
+    }
+  },
 
-  sendToMaintenance: (missionId) =>
-    set((s) => {
-      const mission = s.missions.find((m) => m.id === missionId)
-      if (!mission) return s
-      return {
-        missions: s.missions.map((m) =>
-          m.id === missionId
-            ? {
-                ...m,
-                status: 'cloturee',
-                timeline: [...m.timeline, { label: 'Engin envoyé en maintenance', time: now() }],
-              }
-            : m
-        ),
-        vehicles: s.vehicles.map((v) =>
-          v.id === mission.vehicleId
-            ? { ...v, status: 'maintenance', site: undefined, driverId: undefined }
-            : v
-        ),
-        drivers: s.drivers.map((d) =>
-          d.id === mission.driverId ? { ...d, status: 'disponible' } : d
-        ),
-      }
-    }),
+  addVehicle: async (v) => {
+    const api = useApiStore.getState()
+    try {
+      await api.fetch('/vehicles', {
+        method: 'POST',
+        body: JSON.stringify({
+          code: v.code,
+          type: v.type,
+          licensePlate: v.plate,
+          initialKm: v.km,
+          currentKm: v.km,
+          engineHours: v.engineHours,
+          fuelLevel: v.fuelLevel,
+        }),
+      })
+      await get().refresh()
+    } catch (err) {
+      set({ error: describe(err) })
+    }
+  },
 
-  addFuelEntry: (f) =>
-    set((s) => ({
-      fuelEntries: [{ ...f, id: nextId('f') }, ...s.fuelEntries],
-      expenses: [
-        {
-          id: nextId('e'),
-          vehicleId: f.vehicleId,
+  addDriver: async (d) => {
+    const api = useApiStore.getState()
+    try {
+      await api.fetch('/drivers', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: d.name,
+          email: `${d.matricule || d.name.toLowerCase().replace(/\s+/g, '.')}@smartfleet.local`,
+          phone: d.phone,
+          licenseType: d.license,
+          skills: d.skills,
+        }),
+      })
+      await get().refresh()
+    } catch (err) {
+      set({ error: describe(err) })
+    }
+  },
+
+  createMission: async (data) => {
+    const api = useApiStore.getState()
+    try {
+      const created = await api.fetch<Record<string, unknown>>('/missions', {
+        method: 'POST',
+        body: JSON.stringify({
+          vehicleId: data.vehicleId,
+          driverId: data.driverId,
+          startDate: toDateOnly(data.startDate),
+          endDate: toDateOnly(data.endDate),
+          site: data.site,
+          client: data.client,
+          budget: data.budget,
+        }),
+      })
+      await get().refresh()
+      return toMission(created as never)
+    } catch (err) {
+      // Le serveur refuse une affectation qui chevauche une mission existante :
+      // son message nomme le conflit et doit remonter tel quel.
+      set({ error: describe(err) })
+      return null
+    }
+  },
+
+  recordDeparture: async (missionId, reading) => {
+    const api = useApiStore.getState()
+    try {
+      await api.fetch(`/missions/${missionId}/start`, {
+        method: 'POST',
+        body: JSON.stringify({
+          km: reading.km,
+          engineHours: reading.engineHours,
+          fuel: reading.fuelLevel,
+        }),
+      })
+      await get().refresh()
+    } catch (err) {
+      set({ error: describe(err) })
+    }
+  },
+
+  recordReturn: async (missionId, reading) => {
+    const api = useApiStore.getState()
+    try {
+      await api.fetch(`/missions/${missionId}/return`, {
+        method: 'POST',
+        body: JSON.stringify({
+          km: reading.km,
+          engineHours: reading.engineHours,
+          fuel: reading.fuelLevel,
+        }),
+      })
+      await get().refresh()
+    } catch (err) {
+      set({ error: describe(err) })
+    }
+  },
+
+  validateReturn: async (missionId) => {
+    const api = useApiStore.getState()
+    try {
+      await api.fetch(`/missions/${missionId}/validate`, {
+        method: 'POST',
+        body: JSON.stringify({ isConform: true }),
+      })
+      await get().refresh()
+    } catch (err) {
+      set({ error: describe(err) })
+    }
+  },
+
+  sendToMaintenance: async (missionId) => {
+    const api = useApiStore.getState()
+    try {
+      // Un retour non conforme envoie le véhicule en atelier : c'est le serveur
+      // qui en tire les conséquences sur son statut.
+      await api.fetch(`/missions/${missionId}/validate`, {
+        method: 'POST',
+        body: JSON.stringify({ isConform: false }),
+      })
+      await get().refresh()
+    } catch (err) {
+      set({ error: describe(err) })
+    }
+  },
+
+  addFuelEntry: async (f) => {
+    const api = useApiStore.getState()
+    try {
+      await api.fetch('/fuel-entries', {
+        method: 'POST',
+        body: JSON.stringify({
           missionId: f.missionId,
-          category: 'Carburant' as const,
-          label: `Ravitaillement ${s.vehicles.find((v) => v.id === f.vehicleId)?.code ?? ''}`,
-          amount: f.amount,
-          date: f.date,
-        },
-        ...s.expenses,
-      ],
-    })),
+          quantity: f.liters,
+          cost: f.amount,
+          station: f.station,
+        }),
+      })
+      await get().refresh()
+    } catch (err) {
+      // L'endpoint de saisie n'existe pas encore côté serveur : l'écran doit le
+      // dire plutôt que de laisser croire à un enregistrement.
+      set({ error: describe(err) })
+    }
+  },
 
-  addExpense: (e) =>
-    set((s) => ({ expenses: [{ ...e, id: nextId('e') }, ...s.expenses] })),
+  addExpense: async () => {
+    // Les dépenses n'ont ni entité ni endpoint : annoncer un enregistrement
+    // serait mentir sur ce que fait le bouton.
+    set({ error: "L'enregistrement des dépenses n'est pas encore disponible." })
+  },
 
-  markAlertsRead: () =>
-    set((s) => ({ alerts: s.alerts.map((a) => ({ ...a, read: true })) })),
+  markAlertsRead: () => {
+    // Les alertes sont recalculées à chaque lecture à partir de l'état de la
+    // flotte : rien n'est stocké côté serveur qu'on pourrait marquer comme lu.
+    // Le repère reste local à la session.
+    set((s) => ({ alerts: s.alerts.map((a) => ({ ...a, read: true })) }))
+  },
 }))

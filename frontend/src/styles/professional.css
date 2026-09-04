@@ -771,3 +771,36 @@ tr:last-child td {
     align-items: stretch;
   }
 }
+
+
+/* Bandeau de panne de chargement.
+   Annoncé une fois en tête de page plutôt que répété dans chaque liste vide :
+   la cause est unique, le message doit l'être aussi. */
+.fleet-load-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--danger, #c0392b);
+  border-left-width: 3px;
+  border-radius: 4px;
+  background: var(--surface, #fff);
+  font-size: 0.9rem;
+}
+
+.fleet-load-error strong { color: var(--danger, #c0392b); }
+
+.fleet-load-error button {
+  margin-left: auto;
+  padding: 0.35rem 0.9rem;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.fleet-load-error button:hover { background: rgba(0, 0, 0, 0.05); }

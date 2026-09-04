@@ -40,7 +40,7 @@ class MissionOrchestrator {
   }
 
   /** PHASE 1-2 : Création + affectation de mission */
-  createMission(data: MissionInput): Mission {
+  async createMission(data: MissionInput): Promise<Mission> {
     this.requirePermission('mission.create')
     const state = useFleetStore.getState()
 
@@ -78,7 +78,12 @@ class MissionOrchestrator {
       throw new Error(`Conducteur déjà affecté sur cette période`)
     }
 
-    const mission = state.createMission(data)
+    const mission = await state.createMission(data)
+    if (!mission) {
+      // Le magasin a conservé le message du serveur : le remonter tel quel
+      // plutôt qu'un libellé générique, il nomme le conflit.
+      throw new Error(useFleetStore.getState().error ?? "La mission n'a pas pu être créée")
+    }
     useAuditStore.getState().log({
       actor: this.currentActorId,
       action: 'mission.created',
@@ -91,14 +96,14 @@ class MissionOrchestrator {
   }
 
   /** PHASE 3 : Départ (mission → en_cours, engin → en_mission) */
-  startMission(missionId: string, departure: Omit<CounterReading, 'time'>): Mission {
+  async startMission(missionId: string, departure: Omit<CounterReading, 'time'>): Promise<Mission> {
     this.requirePermission('mission.start')
     const state = useFleetStore.getState()
     const mission = state.missions.find((m) => m.id === missionId)
     if (!mission) throw new Error('Mission non trouvée')
     if (mission.status !== 'affectee') throw new Error('Mission non affectée')
 
-    state.recordDeparture(missionId, departure)
+    await state.recordDeparture(missionId, departure)
     useAuditStore.getState().log({
       actor: this.currentActorId,
       action: 'mission.started',
@@ -107,18 +112,22 @@ class MissionOrchestrator {
       driverId: mission.driverId,
       details: { km: departure.km, fuelLevel: departure.fuelLevel },
     })
-    return useFleetStore.getState().missions.find((m) => m.id === missionId)!
+    const updated = useFleetStore.getState().missions.find((m) => m.id === missionId)
+    if (!updated) {
+      throw new Error(useFleetStore.getState().error ?? 'Mission introuvable après mise à jour')
+    }
+    return updated
   }
 
   /** PHASE 4 : Retour (mission → controle, engin → controle) */
-  returnMission(missionId: string, arrival: Omit<CounterReading, 'time'>): Mission {
+  async returnMission(missionId: string, arrival: Omit<CounterReading, 'time'>): Promise<Mission> {
     this.requirePermission('mission.return')
     const state = useFleetStore.getState()
     const mission = state.missions.find((m) => m.id === missionId)
     if (!mission) throw new Error('Mission non trouvée')
     if (mission.status !== 'en_cours') throw new Error('Mission non en cours')
 
-    state.recordReturn(missionId, arrival)
+    await state.recordReturn(missionId, arrival)
     useAuditStore.getState().log({
       actor: this.currentActorId,
       action: 'mission.returned',
@@ -127,11 +136,15 @@ class MissionOrchestrator {
       driverId: mission.driverId,
       details: { km: arrival.km, fuelLevel: arrival.fuelLevel },
     })
-    return useFleetStore.getState().missions.find((m) => m.id === missionId)!
+    const updated = useFleetStore.getState().missions.find((m) => m.id === missionId)
+    if (!updated) {
+      throw new Error(useFleetStore.getState().error ?? 'Mission introuvable après mise à jour')
+    }
+    return updated
   }
 
   /** PHASE 5 : Validation du retour (→ cloturee, engin → disponible ou maintenance) */
-  validateReturn(missionId: string, isConform = true): Mission {
+  async validateReturn(missionId: string, isConform = true): Promise<Mission> {
     this.requirePermission('mission.validate')
     const state = useFleetStore.getState()
     const mission = state.missions.find((m) => m.id === missionId)
@@ -140,8 +153,8 @@ class MissionOrchestrator {
       throw new Error('Mission non en contrôle')
     }
 
-    if (isConform) state.validateReturn(missionId)
-    else state.sendToMaintenance(missionId)
+    if (isConform) await state.validateReturn(missionId)
+    else await state.sendToMaintenance(missionId)
     useAuditStore.getState().log({
       actor: this.currentActorId,
       action: isConform ? 'mission.validated' : 'mission.maintenance',
@@ -150,13 +163,17 @@ class MissionOrchestrator {
       driverId: mission.driverId,
       details: { conform: isConform },
     })
-    return useFleetStore.getState().missions.find((m) => m.id === missionId)!
+    const updated = useFleetStore.getState().missions.find((m) => m.id === missionId)
+    if (!updated) {
+      throw new Error(useFleetStore.getState().error ?? 'Mission introuvable après mise à jour')
+    }
+    return updated
   }
 
   /** Carburant */
-  recordFuel(entry: Omit<FuelEntry, 'id'>): void {
+  async recordFuel(entry: Omit<FuelEntry, 'id'>): Promise<void> {
     this.requirePermission('fuel.create')
-    useFleetStore.getState().addFuelEntry(entry)
+    await useFleetStore.getState().addFuelEntry(entry)
   }
 
   /** Requêtes */

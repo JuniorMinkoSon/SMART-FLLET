@@ -2,7 +2,6 @@ import { FormEvent, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 import { useApiStore } from '@/store/apiStore'
-import { USERS } from '@/data/mockData'
 import type { UserRole } from '@/types'
 import { AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react'
 
@@ -11,6 +10,18 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 function landingFor(role: UserRole) {
   return role === 'conducteur' ? '/conducteur' : '/dashboard'
 }
+
+/**
+ * Raccourcis de saisie vers les comptes du jeu de démonstration.
+ *
+ * Ces comptes existent réellement en base : les boutons remplissent le
+ * formulaire, la vérification reste entièrement du ressort du serveur.
+ */
+const DEMO_ACCOUNTS = [
+  { id: 'admin', name: 'Administrateur', email: 'admin@smartfleet.com', password: 'admin123' },
+  { id: 'gestion', name: 'Gestionnaire', email: 'gestion@smartfleet.com', password: 'gestion123' },
+  { id: 'conducteur', name: 'Conducteur', email: 'conducteur@smartfleet.com', password: 'conduct123' },
+]
 
 export function Login() {
   const { setUser } = useAuthStore()
@@ -68,14 +79,15 @@ export function Login() {
       } else {
         setError('Identifiants incorrects.')
       }
-    } catch {
-      // Pas de backend joignable → mode démonstration (comptes mock).
-      const mock = USERS.find((u) => u.email === email.trim() && u.password === password)
-      if (mock) {
-        completeLogin({ id: mock.id, name: mock.name, email: mock.email, role: mock.role })
-      } else {
-        setError('Identifiants incorrects (ou backend indisponible).')
-      }
+    } catch (err) {
+      // Aucune connexion de secours : un repli sur des identifiants embarqués
+      // ouvrirait l'application précisément quand le serveur ne peut plus rien
+      // vérifier, et donnerait accès à des écrans sans données.
+      setError(
+        err instanceof Error && err.message
+          ? err.message
+          : 'Le serveur est injoignable. Réessayez dans un instant.'
+      )
     } finally {
       setLoading(false)
     }
@@ -168,7 +180,7 @@ export function Login() {
 
         <div className="demo-accounts">
           Comptes de démonstration :
-          {USERS.map((u) => (
+          {DEMO_ACCOUNTS.map((u) => (
             <button
               key={u.id}
               type="button"
@@ -178,14 +190,7 @@ export function Login() {
                 setTouched({ email: true, password: true })
               }}
             >
-              <strong>
-                {u.role === 'admin'
-                  ? 'Administrateur'
-                  : u.role === 'gestionnaire'
-                    ? 'Gestionnaire'
-                    : 'Conducteur'}
-              </strong>{' '}
-              — {u.email} / {u.password}
+              <strong>{u.name}</strong> — {u.email} / {u.password}
             </button>
           ))}
         </div>
