@@ -38,12 +38,12 @@ public class DriverController {
      */
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'GESTIONNAIRE')")
-    public ResponseEntity<DriverResponse> createDriver(@Valid @RequestBody CreateDriverRequest request) {
+    public ResponseEntity<DriverCreatedResponse> createDriver(@Valid @RequestBody CreateDriverRequest request) {
         // La construction passe par le service : c'est lui qui crée le compte
         // d'accès en même temps que la fiche. Assemblée ici, l'entité était
         // enregistrée sans compte, et le conducteur ne pouvait jamais se
         // connecter pour voir ses missions.
-        Driver saved = driverService.createDriver(
+        DriverService.CreatedDriver created = driverService.createDriver(
             request.getName(),
             request.getEmail(),
             request.getPhone(),
@@ -54,7 +54,40 @@ public class DriverController {
             request.getVehicleCategories(),
             request.getPassword()
         );
-        return new ResponseEntity<>(DriverResponse.from(saved), HttpStatus.CREATED);
+
+        // La réponse porte le mot de passe : c'est la seule occasion de
+        // l'afficher, il est haché en base et ne pourra plus être relu.
+        return new ResponseEntity<>(
+            DriverCreatedResponse.of(created.driver(), created.password(), created.generated()),
+            HttpStatus.CREATED);
+    }
+
+    /**
+     * Réinitialise le mot de passe d'un conducteur.
+     *
+     * Retourne le nouveau mot de passe en clair, une seule fois : l'ancien est
+     * haché, donc irrécupérable. C'est le seul moyen de rendre l'accès à
+     * quelqu'un qui l'a perdu.
+     */
+    @PostMapping("/{id}/reset-password")
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTIONNAIRE')")
+    public ResponseEntity<PasswordResetResponse> resetPassword(
+        @PathVariable String id,
+        @RequestBody(required = false) PasswordResetRequest request
+    ) {
+        String applied = driverService.resetPassword(
+            id, request == null ? null : request.getPassword());
+        return ResponseEntity.ok(new PasswordResetResponse(applied));
+    }
+
+    /** Mot de passe choisi. Absent, un mot de passe est engendré. */
+    @lombok.Data
+    public static class PasswordResetRequest {
+        private String password;
+    }
+
+    /** Nouveau mot de passe, à transmettre au conducteur. */
+    public record PasswordResetResponse(String password) {
     }
 
     @GetMapping

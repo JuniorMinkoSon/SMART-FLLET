@@ -42,7 +42,11 @@ public class DriverService {
      * @param password mot de passe initial, à transmettre au conducteur. Absent,
      *        un mot de passe est engendré et retourné une seule fois.
      */
-    public Driver createDriver(
+    /** Résultat d'une création : la fiche, et le mot de passe réellement appliqué. */
+    public record CreatedDriver(Driver driver, String password, boolean generated) {
+    }
+
+    public CreatedDriver createDriver(
         String name, String email, String phone,
         String matricule, String licenseType, LocalDate licenseExpiryDate,
         List<String> skills, List<String> vehicleCategories,
@@ -79,19 +83,23 @@ public class DriverService {
 
             Driver saved = driverRepository.save(driver);
 
+            boolean generated = password == null || password.isBlank();
+            String applied = generated ? defaultPassword() : password;
+
             // Le compte est créé dans la même transaction : un conducteur
             // enregistré sans accès serait un conducteur inutilisable.
             User account = User.builder()
                 .name(name)
                 .email(email)
-                .password(passwordEncoder.encode(
-                    password == null || password.isBlank() ? defaultPassword() : password))
+                .password(passwordEncoder.encode(applied))
                 .role(UserRole.CONDUCTEUR)
                 .driver(saved)
                 .build();
             userRepository.save(account);
 
-            return saved;
+            // Le mot de passe en clair ne franchit cette frontière qu'ici : il
+            // est haché en base, et ne pourra plus être relu.
+            return new CreatedDriver(saved, applied, generated);
         } catch (Exception e) {
             throw new BusinessException("SKILLS_ERROR", "Erreur lors du traitement des compétences", 400);
         }
@@ -125,5 +133,31 @@ public class DriverService {
      */
     private String defaultPassword() {
         return "SF-" + java.util.UUID.randomUUID().toString().substring(0, 8);
+    }
+
+    /**
+     * Réinitialise le mot de passe d'un conducteur et retourne le nouveau.
+     *
+     * Seul moyen de rendre l'accès à quelqu'un qui l'a perdu : l'ancien est
+     * haché, donc irrécupérable. Le nouveau est affiché une fois, comme à la
+     * création.
+     */
+    public String resetPassword(String driverId, String newPassword) {
+        Driver driver = driverRepository.findById(driverId)
+            .orElseThrow(() -> new BusinessException("DRIVER_NOT_FOUND",
+                "Conducteur non trouvé", 404));
+
+        User account = userRepository.findByEmail(driver.getEmail())
+            .orElseThrow(() -> new BusinessException("ACCOUNT_NOT_FOUND",
+                "Ce conducteur n'a pas de compte d'accès. Recréez sa fiche.", 404));
+
+        String applied = newPassword == null || newPassword.isBlank()
+            ? defaultPassword()
+            : newPassword;
+
+        account.setPassword(passwordEncoder.encode(applied));
+        userRepository.save(account);
+
+        return applied;
     }
 }

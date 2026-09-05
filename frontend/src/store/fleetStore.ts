@@ -45,7 +45,18 @@ interface FleetState {
   refresh: () => Promise<void>
 
   addVehicle: (v: Omit<Vehicle, 'id'>) => Promise<void>
-  addDriver: (d: Omit<Driver, 'id'>) => Promise<void>
+  /**
+   * Crée un conducteur et son compte d'accès.
+   *
+   * Retourne le mot de passe appliqué : c'est la seule occasion de l'afficher,
+   * il est haché côté serveur et ne pourra plus être relu.
+   */
+  addDriver: (
+    d: Omit<Driver, 'id'> & { password?: string }
+  ) => Promise<{ password: string; generated: boolean } | null>
+
+  /** Réinitialise l'accès d'un conducteur et retourne le nouveau mot de passe. */
+  resetDriverPassword: (driverId: string, password?: string) => Promise<string | null>
   createMission: (data: {
     site: string
     client?: string
@@ -193,19 +204,43 @@ export const useFleetStore = create<FleetState>((set, get) => ({
   addDriver: async (d) => {
     const api = useApiStore.getState()
     try {
-      await api.fetch('/drivers', {
+      const created = await api.fetch<{
+        initialPassword: string
+        generated: boolean
+      }>('/drivers', {
         method: 'POST',
         body: JSON.stringify({
           name: d.name,
+          // L'adresse sert d'identifiant de connexion : le matricule la rend
+          // stable et reconnaissable, le nom sert de repli.
           email: `${d.matricule || d.name.toLowerCase().replace(/\s+/g, '.')}@smartfleet.local`,
           phone: d.phone,
+          matricule: d.matricule || undefined,
           licenseType: d.license,
           skills: d.skills,
+          vehicleCategories: d.vehicleCategories,
+          password: d.password || undefined,
         }),
       })
       await get().refresh()
+      return { password: created.initialPassword, generated: created.generated }
     } catch (err) {
       set({ error: describe(err) })
+      return null
+    }
+  },
+
+  resetDriverPassword: async (driverId, password) => {
+    const api = useApiStore.getState()
+    try {
+      const res = await api.fetch<{ password: string }>(
+        `/drivers/${driverId}/reset-password`,
+        { method: 'POST', body: JSON.stringify({ password: password || null }) }
+      )
+      return res.password
+    } catch (err) {
+      set({ error: describe(err) })
+      return null
     }
   },
 
