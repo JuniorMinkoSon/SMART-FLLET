@@ -79,7 +79,10 @@ logging:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
 
 server:
-  port: ${SERVER_PORT:9090}
+  # PORT est impose par l'hebergeur et n'est pas negociable : un service qui
+  # ecoute ailleurs est declare en echec au deploiement. SERVER_PORT reste le
+  # reglage local, 9090 le defaut de developpement.
+  port: ${PORT:${SERVER_PORT:9090}}
   address: 0.0.0.0
   servlet:
     context-path: /

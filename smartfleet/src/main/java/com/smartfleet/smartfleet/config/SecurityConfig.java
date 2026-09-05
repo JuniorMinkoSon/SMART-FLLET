@@ -38,10 +38,27 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
+    /**
+     * Origines autorisees a appeler l'API.
+     *
+     * Les motifs sont utilises plutot que les origines exactes parce que
+     * l'hebergeur du frontend attribue un domaine different a chaque
+     * deploiement de previsualisation (https://smartfleet-xyz123.vercel.app) :
+     * une liste d'origines exactes n'autoriserait que la production et ferait
+     * echouer chaque previsualisation sur une erreur CORS.
+     *
+     * Le caractere generique reste borne a un domaine declare : il n'ouvre pas
+     * l'API a n'importe quelle origine.
+     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
+        configuration.setAllowedOriginPatterns(
+            Arrays.stream(allowedOrigins.split(","))
+                .map(String::trim)
+                .filter(origin -> !origin.isEmpty())
+                .toList()
+        );
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

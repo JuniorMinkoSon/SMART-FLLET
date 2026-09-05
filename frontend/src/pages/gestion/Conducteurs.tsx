@@ -4,7 +4,7 @@ import { useFleetStore } from '@/store/fleetStore'
 import { Drawer, DriverBadge, EmptyState, Modal } from '@/components/ui'
 
 export function Conducteurs() {
-  const { drivers, addDriver } = useFleetStore()
+  const { drivers, addDriver, resetDriverPassword } = useFleetStore()
   const [addOpen, setAddOpen] = useState(false)
   const [form, setForm] = useState({ name: '', matricule: '', phone: '', license: 'C' })
   // Types d'engins que l'opérateur est habilité à conduire. Sans au moins une
@@ -12,6 +12,7 @@ export function Conducteurs() {
   // doit donc le demander, pas le supposer.
   const [categories, setCategories] = useState<string[]>([])
   const [password, setPassword] = useState('')
+  const [resetting, setResetting] = useState<string | null>(null)
   // Le mot de passe appliqué, affiché une seule fois après création : il est
   // haché côté serveur et ne pourra plus être relu.
   const [credentials, setCredentials] = useState<
@@ -71,6 +72,7 @@ export function Conducteurs() {
                 <th>Permis</th>
                 <th>Engins habilités</th>
                 <th>Statut</th>
+                <th>Accès</th>
               </tr>
             </thead>
             <tbody>
@@ -87,6 +89,31 @@ export function Conducteurs() {
                   </td>
                   <td>
                     <DriverBadge status={d.status} />
+                  </td>
+                  <td>
+                    {/* Les mots de passe sont hachés : impossible de relire
+                        l'existant. Réinitialiser est le seul moyen de rendre
+                        l'accès — le nouveau s'affiche une fois. */}
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      disabled={resetting === d.id}
+                      onClick={async () => {
+                        setResetting(d.id)
+                        const pwd = await resetDriverPassword(d.id)
+                        setResetting(null)
+                        if (pwd) {
+                          setCredentials({
+                            name: d.name,
+                            email: `${d.matricule || d.name.toLowerCase().replace(/\s+/g, '.')}@smartfleet.local`,
+                            password: pwd,
+                            generated: true,
+                          })
+                        }
+                      }}
+                    >
+                      {resetting === d.id ? '…' : 'Réinitialiser'}
+                    </button>
                   </td>
                 </tr>
               ))}

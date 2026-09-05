@@ -1,0 +1,73 @@
+# Blueprint Render — API SmartFleet + base PostgreSQL
+#
+# Render lit ce fichier a la racine du depot et cree les deux services d'un
+# seul coup (Blueprint → New Blueprint Instance).
+#
+# Pourquoi PostgreSQL et pas la base H2 du developpement : le disque d'un
+# conteneur Render est recree a chaque deploiement. Une base fichier repartirait
+# vide a chaque mise en ligne, et les comptes crees par les utilisateurs
+# disparaitraient sans trace. Le choix du moteur reste porte par les variables
+# d'environnement ci-dessous, jamais par le code.
+
+databases:
+  - name: smartfleet-db
+    databaseName: smartfleet
+    user: smartfleet
+    plan: free
+    # La formule gratuite expire au bout de 30 jours : passer en `basic-256mb`
+    # avant une mise en service reelle.
+
+services:
+  - type: web
+    name: smartfleet-api
+    runtime: docker
+    plan: free
+    region: frankfurt
+    rootDir: smartfleet
+    dockerfilePath: ./Dockerfile
+
+    # Render redemarre le service si cette route ne repond plus.
+    healthCheckPath: /actuator/health
+
+    envVars:
+      # Chaine JDBC construite par Render a la creation de la base. Render
+      # publie une URL au format `postgres://` ; `fromDatabase` avec la
+      # propriete `connectionString` fournit la forme attendue par le pilote.
+      - key: SPRING_DATASOURCE_URL
+        fromDatabase:
+          name: smartfleet-db
+          property: connectionString
+
+      - key: SPRING_DATASOURCE_DRIVER_CLASS_NAME
+        value: org.postgresql.Driver
+
+      - key: JPA_DIALECT
+        value: org.hibernate.dialect.PostgreSQLDialect
+
+      # Le schema est construit par Hibernate, comme en developpement : c'est le
+      # comportement verifie de bout en bout. Les migrations Flyway existent
+      # mais ne sont pas encore activees — les activer sans les avoir jouees sur
+      # PostgreSQL echangerait un risque connu contre un risque non teste.
+      - key: JPA_DDL_AUTO
+        value: update
+
+      # Origines autorisees a appeler l'API. Le motif couvre les deploiements de
+      # previsualisation, qui portent un domaine different a chaque mise en
+      # ligne. A restreindre au domaine definitif une fois celui-ci attribue.
+      - key: CORS_ORIGINS
+        value: https://*.vercel.app
+
+      # La console H2 n'a rien a faire en ligne : elle donne un acces direct a
+      # la base depuis un navigateur.
+      - key: H2_CONSOLE_ENABLED
+        value: "false"
+
+      - key: JAVA_TOOL_OPTIONS
+        # 512 Mo sur la formule gratuite : sans plafond, la JVM en reclame plus
+        # que le conteneur n'en a et se fait interrompre au demarrage.
+        value: -XX:MaxRAMPercentage=70
+
+      # Renseignee dans le tableau de bord Render, jamais ici : un secret
+      # commite est un secret publie.
+      - key: OPENAI_API_KEY
+        sync: false

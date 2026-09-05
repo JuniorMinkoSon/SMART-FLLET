@@ -27,3 +27,6 @@ Thumbs.db
 
 # Build backend
 smartfleet/target/
+
+# Base H2 locale : donnees de poste de travail, jamais du code.
+smartfleet/data/

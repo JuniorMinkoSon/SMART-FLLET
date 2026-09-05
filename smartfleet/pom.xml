@@ -78,6 +78,17 @@
 			<artifactId>h2</artifactId>
 			<scope>runtime</scope>
 		</dependency>
+		<!--
+			PostgreSQL sert en hébergement : le disque d'un conteneur Render est
+			recréé à chaque déploiement, et une base H2 fichier repartirait vide.
+			Le pilote est chargé à l'exécution ; le choix du moteur reste porté
+			par SPRING_DATASOURCE_URL, pas par le code.
+		-->
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>runtime</scope>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-starter-model-openai</artifactId>

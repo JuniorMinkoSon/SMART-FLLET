@@ -81,21 +81,24 @@ public class DriverService {
                 .vehicleCategories(categoriesJson)
                 .build();
 
-            Driver saved = driverRepository.save(driver);
-
             boolean generated = password == null || password.isBlank();
             String applied = generated ? defaultPassword() : password;
 
             // Le compte est créé dans la même transaction : un conducteur
             // enregistré sans accès serait un conducteur inutilisable.
-            User account = User.builder()
+            //
+            // Il précède la fiche car c'est elle qui porte la relation
+            // (Driver.user) : la poser sur le compte ne créerait aucun lien.
+            User account = userRepository.save(User.builder()
                 .name(name)
                 .email(email)
                 .password(passwordEncoder.encode(applied))
                 .role(UserRole.CONDUCTEUR)
-                .driver(saved)
-                .build();
-            userRepository.save(account);
+                .enabled(true)
+                .build());
+
+            driver.setUser(account);
+            Driver saved = driverRepository.save(driver);
 
             // Le mot de passe en clair ne franchit cette frontière qu'ici : il
             // est haché en base, et ne pourra plus être relu.

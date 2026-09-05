@@ -1,4 +1,5 @@
 import { FormEvent, useMemo, useState } from 'react'
+import { VEHICLE_TYPES } from '@/data/vehicleTypes'
 import { Link, useNavigate } from 'react-router-dom'
 import { useApiStore } from '@/store/apiStore'
 import { useAuthStore } from '@/store/authStore'
@@ -20,6 +21,11 @@ export function Register() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [role, setRole] = useState<UserRole>('conducteur')
+  const [phone, setPhone] = useState('')
+  const [license, setLicense] = useState('C')
+  // Engins conduits : sans habilitation, le compte existe mais n'est proposé
+  // sur aucune affectation.
+  const [categories, setCategories] = useState<string[]>([])
   const [showPassword, setShowPassword] = useState(false)
   const [touched, setTouched] = useState({ name: false, email: false, password: false })
   const [error, setError] = useState('')
@@ -60,7 +66,15 @@ export function Register() {
         role: string
       }>('/auth/register', {
         method: 'POST',
-        body: JSON.stringify({ name, email: email.trim(), password, role }),
+        body: JSON.stringify({
+          name,
+          email: email.trim(),
+          password,
+          role,
+          phone,
+          licenseType: license,
+          vehicleCategories: categories,
+        }),
       })
       if (res?.token) {
         setToken(String(res.token))
@@ -71,13 +85,17 @@ export function Register() {
           role: String(res.role).toLowerCase() as UserRole,
         })
       } else {
-        // Réponse sans token : bascule démo (le backend n'expose pas encore
-        // d'inscription — voir FRONTEND_AUDIT_REPORT, BACKEND_DEPENDENCY BD-1).
-        complete({ id: `local-${Date.now()}`, name, email: email.trim(), role })
+        setError("Le compte n'a pas pu être créé. Réessayez.")
       }
-    } catch {
-      // Aucun backend joignable → création d'une session locale en mode démo.
-      complete({ id: `local-${Date.now()}`, name, email: email.trim(), role })
+    } catch (err) {
+      // Aucune session de secours : ouvrir l'application sans compte réel
+      // donnerait accès à des écrans vides, et le compte n'existerait nulle
+      // part — ni pour recevoir une mission, ni pour se reconnecter.
+      setError(
+        err instanceof Error && err.message
+          ? err.message
+          : 'Le serveur est injoignable. Réessayez dans un instant.'
+      )
     } finally {
       setLoading(false)
     }
@@ -164,6 +182,62 @@ export function Register() {
             </select>
           </div>
 
+          {/* Un conducteur déclare ce qu'il conduit : c'est cette information
+              qui permettra au gestionnaire de le proposer sur une mission.
+              Les autres rôles n'affectent pas d'engin à eux-mêmes. */}
+          {role === 'conducteur' && (
+            <>
+              <div className="field">
+                <label htmlFor="reg-phone">Téléphone</label>
+                <input
+                  id="reg-phone"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+225 07 00 00 00"
+                />
+              </div>
+
+              <div className="field">
+                <label htmlFor="reg-license">Permis</label>
+                <select
+                  id="reg-license"
+                  value={license}
+                  onChange={(e) => setLicense(e.target.value)}
+                >
+                  {['B', 'C', 'CE', 'D'].map((l) => (
+                    <option key={l}>{l}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="field">
+                <label>Engins que vous conduisez</label>
+                <div className="checkbox-grid">
+                  {VEHICLE_TYPES.map((t) => (
+                    <label key={t} className="checkbox-item">
+                      <input
+                        type="checkbox"
+                        checked={categories.includes(t)}
+                        onChange={(e) =>
+                          setCategories((prev) =>
+                            e.target.checked ? [...prev, t] : prev.filter((c) => c !== t)
+                          )
+                        }
+                      />
+                      <span>{t}</span>
+                    </label>
+                  ))}
+                </div>
+                {categories.length === 0 && (
+                  <p className="error-text">
+                    Sélectionnez au moins un engin : sans cela, aucune mission
+                    ne pourra vous être affectée.
+                  </p>
+                )}
+              </div>
+            </>
+          )}
+
           {error && (
             <div className="form-feedback is-error" role="alert">
               <AlertCircle size={18} />
@@ -181,7 +255,7 @@ export function Register() {
             type="submit"
             className="btn btn-primary btn-block btn-lg"
             style={{ marginTop: 12 }}
-            disabled={!isValid || loading}
+            disabled={!isValid || loading || (role === 'conducteur' && categories.length === 0)}
           >
             {loading ? 'Création…' : "S'inscrire"}
           </button>
