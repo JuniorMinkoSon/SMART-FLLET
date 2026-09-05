@@ -66,6 +66,9 @@ interface VehicleDto {
   fuelLevel?: number
   condition?: string | null
   site?: string | null
+  ownership?: string | null
+  ownerCompany?: string | null
+  contractEndDate?: string | null
   driverId?: string | null
   driverName?: string | null
 }
@@ -85,6 +88,11 @@ export function toVehicle(dto: VehicleDto): Vehicle {
     fuelLevel: dto.fuelLevel ?? 0,
     condition: toCondition(dto.condition),
     site: dto.site ?? undefined,
+    // Sans provenance déclarée, l'engin est rattaché au parc propre : c'est le
+    // cas majoritaire, et le supposer externe le sortirait à tort du bilan.
+    ownership: dto.ownership === 'EXTERNE' ? 'EXTERNE' : 'INTERNE',
+    ownerCompany: dto.ownerCompany ?? undefined,
+    contractEndDate: dto.contractEndDate ?? undefined,
     driverId: dto.driverId ?? undefined,
   }
 }
@@ -109,6 +117,7 @@ interface DriverDto {
   license?: string | null
   status: string
   skills?: string[] | null
+  vehicleCategories?: string[] | null
 }
 
 export function toDriver(dto: DriverDto): Driver {
@@ -121,6 +130,9 @@ export function toDriver(dto: DriverDto): Driver {
     phone: dto.phone ?? '',
     license: dto.license ?? '',
     skills: dto.skills ?? [],
+    // Liste vide plutôt que valeur par défaut : une habilitation non déclarée
+    // n'est pas une habilitation universelle.
+    vehicleCategories: dto.vehicleCategories ?? [],
     status: DRIVER_STATUS[dto.status] ?? 'disponible',
   }
 }

@@ -157,7 +157,14 @@ export function MissionWizard() {
           <>
             <div className="card-title">Opérateurs compatibles</div>
             {drivers.map((d) => {
-              const compatible = selectedVehicle ? d.skills.includes(selectedVehicle.type) : true
+              // L'habilitation conditionne l'affectation. Une liste vide signifie
+              // « aucune habilitation déclarée » : l'opérateur n'est pas
+              // sélectionnable, et la raison doit être dite plutôt que laissée
+              // à deviner devant un bouton grisé.
+              const declared = d.vehicleCategories.length > 0
+              const compatible = !selectedVehicle
+                ? declared
+                : d.vehicleCategories.includes(selectedVehicle.type)
               const available = d.status === 'disponible'
               return (
                 <button
@@ -168,14 +175,22 @@ export function MissionWizard() {
                 >
                   <span>
                     <strong>{d.name}</strong>
-                    <span className="muted small"> — {d.skills.join(', ')}</span>
+                    <span className="muted small">
+                      {' — '}
+                      {declared ? d.vehicleCategories.join(', ') : 'aucune habilitation'}
+                    </span>
                   </span>
-                  <span className="small strong" style={{ color: compatible ? 'var(--green)' : 'var(--text-3)' }}>
-                    {compatible
-                      ? available
-                        ? `${selectedVehicle?.type} — compatible`
-                        : 'Indisponible'
-                      : `${d.skills[0]} uniquement`}
+                  <span
+                    className="small strong"
+                    style={{ color: compatible && available ? 'var(--green)' : 'var(--text-3)' }}
+                  >
+                    {!declared
+                      ? 'Habilitations à renseigner'
+                      : !compatible
+                        ? `Habilité : ${d.vehicleCategories.join(', ')}`
+                        : available
+                          ? `${selectedVehicle?.type} — compatible`
+                          : 'Indisponible'}
                   </span>
                 </button>
               )

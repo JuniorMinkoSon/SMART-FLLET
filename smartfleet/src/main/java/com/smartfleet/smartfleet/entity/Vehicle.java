@@ -3,6 +3,7 @@ package com.smartfleet.smartfleet.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -55,6 +56,31 @@ public class Vehicle {
     private String site;
 
     /**
+     * Provenance de l'engin.
+     *
+     * Un engin loué ne se pilote pas comme un engin possédé : son coût est un
+     * loyer, son entretien incombe au prestataire, et il quitte la flotte à
+     * l'échéance. Les confondre fausse le coût de possession du parc propre.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "ownership", length = 20)
+    @Builder.Default
+    private VehicleOwnership ownership = VehicleOwnership.INTERNE;
+
+    /** Prestataire propriétaire, pour un engin externe. */
+    @Column(name = "owner_company", length = 255)
+    private String ownerCompany;
+
+    /**
+     * Fin de mise à disposition d'un engin externe.
+     *
+     * Passée cette date, l'engin ne devrait plus être affecté : c'est ce qui
+     * permet de le signaler avant qu'une mission ne soit planifiée dessus.
+     */
+    @Column(name = "contract_end_date")
+    private LocalDate contractEndDate;
+
+    /**
      * Conducteur affecté au véhicule.
      *
      * À ne pas confondre avec le conducteur d'une mission, porté par
@@ -102,6 +128,9 @@ public class Vehicle {
         updatedAt = LocalDateTime.now();
         if (condition == null) {
             condition = VehicleCondition.BON;
+        }
+        if (ownership == null) {
+            ownership = VehicleOwnership.INTERNE;
         }
     }
 

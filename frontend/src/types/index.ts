@@ -32,6 +32,9 @@ export interface ExternalContract {
   dailyRate: number
 }
 
+/** À qui appartient l'engin : au parc propre, ou à un prestataire. */
+export type VehicleOwnership = 'INTERNE' | 'EXTERNE'
+
 export interface Vehicle {
   id: string
   code: string
@@ -45,6 +48,12 @@ export interface Vehicle {
   condition: 'Bon' | 'Moyen' | 'Mauvais'
   site?: string
   driverId?: string
+  /** Provenance. Un engin sans provenance déclarée appartient au parc propre. */
+  ownership: VehicleOwnership
+  /** Prestataire propriétaire, pour un engin externe. */
+  ownerCompany?: string
+  /** Fin de mise à disposition d'un engin externe. */
+  contractEndDate?: string
   external?: ExternalContract
 }
 
@@ -100,7 +109,16 @@ export interface Driver {
   matricule: string
   phone: string
   license: string
+  /** Savoir-faire déclarés. */
   skills: string[]
+  /**
+   * Types d'engins que l'opérateur est habilité à conduire.
+   *
+   * Distinct des savoir-faire : c'est cette liste qui conditionne une
+   * affectation. Vide, elle signifie « aucune habilitation déclarée » — un
+   * défaut de saisie à corriger, pas une autorisation universelle.
+   */
+  vehicleCategories: string[]
   status: 'disponible' | 'reserve' | 'en_mission' | 'indisponible'
 }
 

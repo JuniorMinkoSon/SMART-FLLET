@@ -1,4 +1,5 @@
 import { FormEvent, useState } from 'react'
+import { VEHICLE_TYPES } from '@/data/vehicleTypes'
 import { useFleetStore } from '@/store/fleetStore'
 import { Drawer, DriverBadge, EmptyState } from '@/components/ui'
 
@@ -6,6 +7,10 @@ export function Conducteurs() {
   const { drivers, addDriver } = useFleetStore()
   const [addOpen, setAddOpen] = useState(false)
   const [form, setForm] = useState({ name: '', matricule: '', phone: '', license: 'C' })
+  // Types d'engins que l'opérateur est habilité à conduire. Sans au moins une
+  // habilitation, il ne pourra être affecté à aucune mission — le formulaire
+  // doit donc le demander, pas le supposer.
+  const [categories, setCategories] = useState<string[]>([])
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
@@ -14,11 +19,13 @@ export function Conducteurs() {
       matricule: form.matricule,
       phone: form.phone,
       license: form.license,
-      skills: [],
+      skills: categories,
+      vehicleCategories: categories,
       status: 'disponible',
     })
     setAddOpen(false)
     setForm({ name: '', matricule: '', phone: '', license: 'C' })
+    setCategories([])
   }
 
   return (
@@ -44,7 +51,7 @@ export function Conducteurs() {
                 <th>Matricule</th>
                 <th>Téléphone</th>
                 <th>Permis</th>
-                <th>Compétences</th>
+                <th>Engins habilités</th>
                 <th>Statut</th>
               </tr>
             </thead>
@@ -55,7 +62,11 @@ export function Conducteurs() {
                   <td>{d.matricule}</td>
                   <td>{d.phone}</td>
                   <td>{d.license}</td>
-                  <td>{d.skills.length ? d.skills.join(', ') : '—'}</td>
+                  <td>
+                    {d.vehicleCategories.length > 0
+                      ? d.vehicleCategories.join(', ')
+                      : <span className="error-text">Aucune habilitation</span>}
+                  </td>
                   <td>
                     <DriverBadge status={d.status} />
                   </td>
@@ -108,11 +119,39 @@ export function Conducteurs() {
               ))}
             </select>
           </div>
+          <div className="field">
+            <label>Engins habilités</label>
+            {/* Sans habilitation, l'opérateur n'apparaît sur aucune mission :
+                le champ est requis, pas optionnel. */}
+            <div className="checkbox-grid">
+              {VEHICLE_TYPES.map((t) => (
+                <label key={t} className="checkbox-item">
+                  <input
+                    type="checkbox"
+                    checked={categories.includes(t)}
+                    onChange={(e) =>
+                      setCategories((prev) =>
+                        e.target.checked ? [...prev, t] : prev.filter((c) => c !== t)
+                      )
+                    }
+                  />
+                  <span>{t}</span>
+                </label>
+              ))}
+            </div>
+            {categories.length === 0 && (
+              <p className="error-text">
+                Sélectionnez au moins un type d'engin : sans habilitation,
+                l'opérateur ne pourra être affecté à aucune mission.
+              </p>
+            )}
+          </div>
+
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}>
             <button type="button" className="btn btn-secondary" onClick={() => setAddOpen(false)}>
               Annuler
             </button>
-            <button type="submit" className="btn btn-primary">
+            <button type="submit" className="btn btn-primary" disabled={categories.length === 0}>
               Créer
             </button>
           </div>

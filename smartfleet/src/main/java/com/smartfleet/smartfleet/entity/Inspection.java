@@ -35,8 +35,14 @@ public class Inspection {
     @JoinColumn(name = "vehicle_id", nullable = false)
     private Vehicle vehicle;
 
-    /** Mission concernée, s'il s'agit d'un contrôle de départ ou de retour. */
-    @ManyToOne(fetch = FetchType.LAZY)
+    /**
+     * Mission concernée, s'il s'agit d'un contrôle de départ ou de retour.
+     *
+     * Chargée avec le contrôle : la vue exposée cite systématiquement le code de
+     * la mission, et un chargement différé échouerait à la projection, une fois
+     * la session fermée.
+     */
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "mission_id")
     private Mission mission;
 
@@ -74,8 +80,10 @@ public class Inspection {
      * juger critique un défaut qui, pris isolément, ne le paraîtrait pas, et son
      * jugement doit primer sur le calcul.
      */
+    // Nom de colonne explicite : « result » est un mot réservé du moteur, et la
+    // requête générée échoue en lecture sans que rien ne le signale à l'écriture.
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Column(name = "inspection_result", length = 20)
     @Builder.Default
     private InspectionResult result = InspectionResult.OK;
 

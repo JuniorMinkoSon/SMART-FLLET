@@ -804,3 +804,36 @@ tr:last-child td {
 }
 
 .fleet-load-error button:hover { background: rgba(0, 0, 0, 0.05); }
+
+
+/* Sélection multiple d'habilitations.
+   Grille plutôt que liste : huit types tiennent en trois lignes au lieu de
+   huit, et l'ensemble reste lisible d'un coup d'œil dans une fenêtre modale. */
+.checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border, #d9dee5);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+
+.checkbox-item:hover { border-color: var(--brand, #1b4d8f); }
+
+.checkbox-item input { margin: 0; cursor: pointer; }
+
+/* L'état sélectionné se voit sans avoir à lire la case. */
+.checkbox-item:has(input:checked) {
+  border-color: var(--brand, #1b4d8f);
+  background: var(--brand-soft, rgba(27, 77, 143, 0.07));
+}

@@ -1,4 +1,5 @@
 import { FormEvent, useMemo, useState } from 'react'
+import { VEHICLE_TYPES } from '@/data/vehicleTypes'
 import { useNavigate } from 'react-router-dom'
 import { useFleetStore } from '@/store/fleetStore'
 import { Drawer, EmptyState, StatusBadge } from '@/components/ui'
@@ -13,7 +14,10 @@ export function Flotte() {
   const [ownerFilter, setOwnerFilter] = useState('')
   const [addOpen, setAddOpen] = useState(false)
 
-  const [form, setForm] = useState({ code: '', type: 'Pelle', name: '', plate: '' })
+  const [form, setForm] = useState({
+    code: '', type: 'Pelle', name: '', plate: '',
+    ownership: 'INTERNE' as 'INTERNE' | 'EXTERNE', ownerCompany: '',
+  })
 
   const types = useMemo(() => Array.from(new Set(vehicles.map((v) => v.type))), [vehicles])
 
@@ -22,8 +26,11 @@ export function Flotte() {
       return false
     if (typeFilter && v.type !== typeFilter) return false
     if (statusFilter && v.status !== statusFilter) return false
-    if (ownerFilter === 'externe' && !v.external) return false
-    if (ownerFilter === 'interne' && v.external) return false
+    // Le filtre s'appuie sur la provenance enregistrée. Il testait auparavant
+    // un champ « external » que le serveur n'a jamais renseigné : il ne
+    // sélectionnait donc jamais rien.
+    if (ownerFilter === 'externe' && v.ownership !== 'EXTERNE') return false
+    if (ownerFilter === 'interne' && v.ownership !== 'INTERNE') return false
     return true
   })
 
@@ -39,10 +46,12 @@ export function Flotte() {
       engineHours: 0,
       fuelLevel: 100,
       condition: 'Bon',
+      ownership: form.ownership,
+      ownerCompany: form.ownership === 'EXTERNE' ? form.ownerCompany : undefined,
     }
     addVehicle(vehicle)
     setAddOpen(false)
-    setForm({ code: '', type: 'Pelle', name: '', plate: '' })
+    setForm({ code: '', type: 'Pelle', name: '', plate: '', ownership: 'INTERNE', ownerCompany: '' })
   }
 
   return (
@@ -114,7 +123,11 @@ export function Flotte() {
                 <td className="strong">{v.code}</td>
                 <td>
                   {v.type}
-                  {v.external && <span className="muted small"> (externe)</span>}
+                  {v.ownership === 'EXTERNE' && (
+                    <span className="muted small">
+                      {' '}(externe{v.ownerCompany ? ` — ${v.ownerCompany}` : ''})
+                    </span>
+                  )}
                 </td>
                 <td>{v.site ?? '—'}</td>
                 <td>
@@ -161,7 +174,7 @@ export function Flotte() {
               value={form.type}
               onChange={(e) => setForm({ ...form, type: e.target.value })}
             >
-              {['Pelle', 'Bulldozer', 'Niveleuse', 'Camion', 'Grue', 'Compacteur'].map((t) => (
+              {VEHICLE_TYPES.map((t) => (
                 <option key={t}>{t}</option>
               ))}
             </select>
@@ -186,6 +199,36 @@ export function Flotte() {
               required
             />
           </div>
+          <div className="field">
+            <label htmlFor="veh-ownership">Provenance</label>
+            {/* Un engin loué a un loyer, un entretien à la charge du prestataire
+                et une date de restitution : le confondre avec le parc propre
+                fausse le coût de possession. */}
+            <select
+              id="veh-ownership"
+              value={form.ownership}
+              onChange={(e) =>
+                setForm({ ...form, ownership: e.target.value as 'INTERNE' | 'EXTERNE' })
+              }
+            >
+              <option value="INTERNE">Interne — parc de l'entreprise</option>
+              <option value="EXTERNE">Externe — loué à un prestataire</option>
+            </select>
+          </div>
+
+          {form.ownership === 'EXTERNE' && (
+            <div className="field">
+              <label htmlFor="veh-owner">Prestataire</label>
+              <input
+                id="veh-owner"
+                value={form.ownerCompany}
+                onChange={(e) => setForm({ ...form, ownerCompany: e.target.value })}
+                placeholder="Nom du loueur"
+                required
+              />
+            </div>
+          )}
+
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}>
             <button type="button" className="btn btn-secondary" onClick={() => setAddOpen(false)}>
               Annuler

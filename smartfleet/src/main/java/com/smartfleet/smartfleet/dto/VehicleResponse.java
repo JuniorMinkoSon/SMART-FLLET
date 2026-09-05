@@ -51,6 +51,15 @@ public class VehicleResponse {
     /** Site d'affectation. */
     private String site;
 
+    /** INTERNE ou EXTERNE : à qui appartient l'engin. */
+    private String ownership;
+
+    /** Prestataire propriétaire, pour un engin externe. */
+    private String ownerCompany;
+
+    /** Fin de mise à disposition d'un engin externe. */
+    private java.time.LocalDate contractEndDate;
+
     /** Conducteur affecté, s'il y en a un. */
     private String driverId;
 
@@ -85,6 +94,12 @@ public class VehicleResponse {
             // affiche cette valeur telle quelle et n'a pas de cas « inconnu ».
             .condition(v.getCondition() == null ? "Bon" : v.getCondition().label())
             .site(v.getSite())
+            // Un engin sans provenance renseignée est réputé appartenir à
+            // l'entreprise : c'est le cas majoritaire, et le supposer externe
+            // ferait sortir du parc propre des engins qui en font partie.
+            .ownership(v.getOwnership() == null ? "INTERNE" : v.getOwnership().name())
+            .ownerCompany(v.getOwnerCompany())
+            .contractEndDate(v.getContractEndDate())
             .driverId(driver == null ? null : driver.getId())
             .driverName(driver == null ? null : driver.getName())
             .createdAt(v.getCreatedAt())

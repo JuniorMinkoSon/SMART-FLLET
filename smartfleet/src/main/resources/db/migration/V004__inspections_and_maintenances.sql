@@ -25,7 +25,9 @@ CREATE TABLE inspections (
     lights_ok       BOOLEAN NOT NULL DEFAULT FALSE,
     bodywork_ok     BOOLEAN NOT NULL DEFAULT FALSE,
 
-    result          VARCHAR(20) NOT NULL DEFAULT 'OK',
+    -- « result » est un mot réservé du moteur : la colonne est nommée
+    -- explicitement pour que la requête générée reste valide.
+    inspection_result VARCHAR(20) NOT NULL DEFAULT 'OK',
     anomaly         TEXT,
     km_reading      INT,
 
@@ -35,14 +37,14 @@ CREATE TABLE inspections (
     CONSTRAINT chk_inspection_type
         CHECK (inspection_type IN ('AVANT_DEPART', 'APRES_MISSION', 'QUOTIDIEN', 'PERIODIQUE')),
     CONSTRAINT chk_inspection_result
-        CHECK (result IN ('OK', 'ATTENTION', 'CRITIQUE'))
+        CHECK (inspection_result IN ('OK', 'ATTENTION', 'CRITIQUE'))
 );
 
 CREATE INDEX idx_inspections_vehicle ON inspections (vehicle_id);
 CREATE INDEX idx_inspections_mission ON inspections (mission_id);
 
 -- Chemin d'accès du tableau de bord : les contrôles bloquants d'abord.
-CREATE INDEX idx_inspections_critical ON inspections (result, created_at);
+CREATE INDEX idx_inspections_critical ON inspections (inspection_result, created_at);
 
 -- Interventions de maintenance.
 --
