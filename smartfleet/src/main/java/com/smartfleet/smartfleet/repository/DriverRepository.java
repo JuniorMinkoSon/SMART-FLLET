@@ -9,4 +9,7 @@ import java.util.Optional;
 public interface DriverRepository extends JpaRepository<Driver, String> {
     Optional<Driver> findByEmail(String email);
     List<Driver> findByStatus(DriverStatus status);
+
+    /** Le matricule est unique : sa recherche sert à refuser un doublon. */
+    Optional<Driver> findByMatricule(String matricule);
 }

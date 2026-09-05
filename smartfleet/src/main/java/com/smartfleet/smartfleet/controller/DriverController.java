@@ -29,26 +29,32 @@ public class DriverController {
     private final DriverService driverService;
     private final ObjectMapper objectMapper;
 
+    /**
+     * Crée un conducteur et son compte d'accès.
+     *
+     * Ouvert au gestionnaire : constituer l'équipe fait partie de la conduite
+     * de la flotte. L'écran lui proposait déjà le bouton, que le serveur
+     * refusait — l'action existait sans être permise.
+     */
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTIONNAIRE')")
     public ResponseEntity<DriverResponse> createDriver(@Valid @RequestBody CreateDriverRequest request) {
-        try {
-            Driver driver = Driver.builder()
-                .name(request.getName())
-                .email(request.getEmail())
-                .phone(request.getPhone())
-                .licenseType(request.getLicenseType())
-                .skills(request.getSkills() != null
-                    ? objectMapper.writeValueAsString(request.getSkills()) : "[]")
-                .vehicleCategories(request.getVehicleCategories() != null
-                    ? objectMapper.writeValueAsString(request.getVehicleCategories()) : "[]")
-                .build();
-
-            Driver saved = driverService.save(driver);
-            return new ResponseEntity<>(DriverResponse.from(saved), HttpStatus.CREATED);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        // La construction passe par le service : c'est lui qui crée le compte
+        // d'accès en même temps que la fiche. Assemblée ici, l'entité était
+        // enregistrée sans compte, et le conducteur ne pouvait jamais se
+        // connecter pour voir ses missions.
+        Driver saved = driverService.createDriver(
+            request.getName(),
+            request.getEmail(),
+            request.getPhone(),
+            request.getMatricule(),
+            request.getLicenseType(),
+            request.getLicenseExpiryDate(),
+            request.getSkills(),
+            request.getVehicleCategories(),
+            request.getPassword()
+        );
+        return new ResponseEntity<>(DriverResponse.from(saved), HttpStatus.CREATED);
     }
 
     @GetMapping
